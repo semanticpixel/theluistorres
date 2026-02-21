@@ -7,29 +7,11 @@
   /* Remove default margin */
   * {
     margin: 0;
-
-    /* Experimental line-height */
-    /* line-height: calc(2px + 2ex + 2px); */
   }
 
   html {
-    /* 1rem = 10px */
-    font-size: 62.5%;
-
-    /* Enable keyword animations */
     @media (prefers-reduced-motion: no-preference) {
-      /* Enable smooth scrolling */
       scroll-behavior: smooth;
-      /* Enable keyword animations */
-      interpolate-size: allow-keywords;
-    }
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    html {
-      /* Enable smooth scrolling */
-      scroll-behavior: smooth;
-      /* Enable keyword animations */
       interpolate-size: allow-keywords;
     }
   }

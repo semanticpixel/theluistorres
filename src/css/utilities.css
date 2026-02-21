@@ -1,6 +1,7 @@
 @layer utilities {
   .row {
     display: flex;
+    flex-wrap: wrap;
   }
   
   .column {
@@ -19,12 +20,6 @@
   .grid {
     --gridColumns: 4;
     display: grid;
-    /* grid-template-columns: repeat(var(--gridColumns), minmax(200px, 1fr));
-    
-    @media (width < 640px) {
-      grid-template-columns: 1fr;
-    } */
-
     grid-template-columns: 1fr;
 
     @media (width > 640px) {
@@ -90,7 +85,7 @@
     justify-self: end;
   }
   
-  .blendMutiply {
+  .blendMultiply {
     mix-blend-mode: multiply;
   }
   
