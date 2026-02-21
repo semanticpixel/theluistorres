@@ -28,51 +28,39 @@
   
   body {
     font-family: var(--baseFont);
-    /* color: #767676; */
   }
   
   h1 {
-    font-size: 2.4rem;
+    font-size: clamp(2.4rem, 2vw + 1.6rem, 3.5rem);
     line-height: 1.25;
   }
-  
+
+  h2 {
+    font-size: clamp(1.6rem, 1.5vw + 1rem, 2rem);
+    line-height: 1.25;
+  }
+
   p {
-    font-size: 1.6rem;
+    font-size: clamp(1.6rem, 1vw + 1.2rem, 2rem);
     font-family: var(--paragraphFont);
     margin-top: 2.4rem;
   }
-  
+
   a {
     color: var(--colorAction);
     font-weight: 800;
     text-decoration: none;
-  
+
     &:hover {
       text-decoration: underline;
     }
   }
-  
+
   h3, ul {
     font-size: 1.6rem;
   }
 
   ul {
     font-family: var(--paragraphFont);
-  }
-
-  /* Use clamp for all of these */
-  @media (width > 640px) {
-    h1 {
-      font-size: 3.5rem;
-    }
-
-    h2 {
-      font-size: 2rem;
-      line-height: 40px;
-    }
-
-    p {
-      font-size: 2rem;
-    }
   }
 }
