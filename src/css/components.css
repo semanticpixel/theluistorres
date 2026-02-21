@@ -58,12 +58,12 @@
     border-bottom: 2px #fff solid;
   }
 
-  .work .gridItem.box {
+  .blob {
     transition: border-radius 0.6s ease-in-out;
-  }
 
-  .work .gridItem.box:hover {
-    animation: blob-morph 8s ease-in-out infinite;
+    &:hover {
+      animation: blob-morph 8s ease-in-out infinite;
+    }
   }
 
   @keyframes blob-morph {
