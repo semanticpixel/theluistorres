@@ -1,0 +1,44 @@
+---
+title: "Grammarly AI Detector — early experiments"
+summary: "Designing the UX for 'is this text AI-generated?' when the answer is statistical, not absolute."
+tags: ["ai", "ux", "prototyping"]
+date: 2023-11-05
+featured: false
+role: "Design Engineer"
+company: "Grammarly"
+period: "2023"
+---
+
+> 📝 **Claude draft — pending Luis's review.** Public-information framing.
+> Luis's specific contribution + the design decisions worth highlighting
+> need a first-person rewrite.
+
+The hard part of an AI detector isn't the model. It's the UI for *"probably."* Users want a yes/no; the model gives a confidence band; product needs both honesty and decisiveness. Resolving that gap is a design problem before it's an ML one.
+
+## Context
+
+In 2023 every writing surface was figuring out the same question: when AI-generated text appears in a draft (or arrives unsolicited from a colleague), what does the product *do* about it? Detection is a feature; *the way you present a probability* is the surface that earns trust. Get it wrong and you create new problems — false accusations, learned skepticism, gameable thresholds.
+
+## Move
+
+*Skeleton — needs Luis's first-person account:*
+
+- The presentation pattern you landed on (and the ones you ruled out)
+- How you handled the false-positive case in the UI — without burying the signal
+- The interaction model for "I disagree with this score"
+
+## Outcome
+
+*Skeleton — needs Luis's notes:*
+
+- Internal user research insights worth surfacing
+- The pattern that generalised to other Grammarly AI surfaces
+- The decision that didn't ship and why
+
+## What I'd do differently
+
+*Skeleton — needs Luis's retro:*
+
+- The visual encoding you'd change
+- The threshold conversation you'd reopen with the model team
+- The cross-functional pattern you'd push for earlier

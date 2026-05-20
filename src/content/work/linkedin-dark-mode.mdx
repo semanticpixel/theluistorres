@@ -1,0 +1,43 @@
+---
+title: "LinkedIn Dark Mode"
+summary: "A two-year token migration that turned dark mode from a setting into infrastructure."
+tags: ["design-systems", "color", "accessibility"]
+date: 2023-05-12
+featured: true
+role: "Design Engineer"
+company: "LinkedIn"
+period: "2021–2023"
+---
+
+> 📝 **Claude draft — pending Luis's review.** Framing reads cleanly; Move + Outcome
+> need Luis's first-person account of the actual rollout strategy.
+
+Dark mode looks like a toggle and is actually a token rewrite. On a product the size of LinkedIn, "ship dark mode" means inventory every hardcoded hex in the codebase, decide what it *meant* semantically, and then thread a semantic token through enough surfaces that the toggle has somewhere to act.
+
+## Context
+
+Most "dark mode ship-it" failures aren't visual — they're organisational. The team owning a particular surface has its own color values, its own brand opinions, its own deadlines. A central design-systems push needs a migration story that lets every surface land at its own pace without forking the palette.
+
+## Move
+
+*Skeleton — needs Luis's first-person account:*
+
+- The semantic-token model you landed on (and what you rejected)
+- The migration pattern that let teams ship dark-mode-correct surfaces incrementally
+- How you handled the long tail — illustrations, brand colours, third-party embeds — without blocking the launch
+
+## Outcome
+
+*Skeleton — needs Luis's launch story:*
+
+- Rollout sequence (geos, surfaces, employee dogfooding)
+- The internal-tools / docs work that made the token model legible to non-systems engineers
+- What the migration tally looked like when you called it complete
+
+## What I'd do differently
+
+*Skeleton — needs Luis's retro:*
+
+- The token I named wrong (and still regret)
+- A migration step you'd reorder
+- The thing about dual-mode design that production code makes obvious but design tools still hide

@@ -1,0 +1,70 @@
+---
+import Base from "~/layouts/Base.astro";
+import WorkCard from "~/components/WorkCard.astro";
+import { getCollection } from "astro:content";
+
+const entries = (await getCollection("work", entry => !entry.data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+---
+
+<Base title="Work — Luis Torres" description="Case studies in design engineering — LinkedIn, Superhuman, Grammarly.">
+  <main class="work-index">
+    <header class="work-index__head">
+      <p class="work-index__eyebrow">work</p>
+      <h1 class="work-index__title">Case studies</h1>
+      <p class="work-index__lede">
+        Five projects, each written so the decisions read clearly — what the constraint was, what
+        the move was, what it cost. Every entry ends with <em>what I'd do differently</em>, which
+        is usually the bit worth reading.
+      </p>
+    </header>
+
+    <div class="work-index__grid">
+      {entries.map(entry => <WorkCard entry={entry} />)}
+    </div>
+  </main>
+</Base>
+
+<style>
+  .work-index {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-10);
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .work-index__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+    max-width: 56ch;
+  }
+
+  .work-index__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .work-index__title {
+    font-family: var(--font-display);
+    font-size: var(--type-64);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .work-index__lede {
+    color: var(--color-text-muted);
+  }
+
+  .work-index__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-5);
+  }
+</style>

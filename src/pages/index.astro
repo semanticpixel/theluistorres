@@ -1,6 +1,19 @@
 ---
 import Base from "~/layouts/Base.astro";
 import HeroName from "~/components/HeroName.astro";
+import WorkCard from "~/components/WorkCard.astro";
+import { getCollection } from "astro:content";
+
+/*
+ * Featured work — limited to 3 entries marked `featured: true` in the
+ * collection. The list is hand-curated via frontmatter rather than ranked
+ * algorithmically; the home page is editorial space.
+ *
+ * LinkedIn Coach surfaces here per ST-4's acceptance criteria.
+ */
+const featured = (await getCollection("work", entry => entry.data.featured && !entry.data.draft))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
 ---
 
 <Base title="Luis Torres" description="Design engineer building for the web.">
@@ -9,8 +22,7 @@ import HeroName from "~/components/HeroName.astro";
       <!--
         Contribution graph background. ST-3 fills this slot with a build-time
         static SVG of the merged GitHub contribution calendar — feathered
-        radial mask, ~18% opacity, anchored bottom-right. Until then the slot
-        sits empty so the hero composition is fully designed without it.
+        radial mask, ~18% opacity, anchored bottom-right.
       -->
       <div class="hero__graph" aria-hidden="true" data-graph-slot></div>
 
@@ -24,6 +36,21 @@ import HeroName from "~/components/HeroName.astro";
         </p>
       </div>
     </section>
+
+    {featured.length > 0 && (
+      <section class="home__work" aria-labelledby="featured-work-heading">
+        <header class="home__work-head">
+          <p class="home__eyebrow">recent work</p>
+          <h2 id="featured-work-heading" class="home__work-title">Three case studies</h2>
+        </header>
+        <div class="home__work-grid">
+          {featured.map(entry => <WorkCard entry={entry} />)}
+        </div>
+        <p class="home__work-more">
+          <a href="/work">read all case studies →</a>
+        </p>
+      </section>
+    )}
   </main>
 </Base>
 
@@ -32,6 +59,8 @@ import HeroName from "~/components/HeroName.astro";
     max-width: var(--container-wide);
     margin-inline: auto;
     padding: var(--space-7) var(--space-5) var(--space-9);
+    display: grid;
+    gap: var(--space-9);
   }
 
   .hero {
@@ -107,5 +136,55 @@ import HeroName from "~/components/HeroName.astro";
     .hero__stat {
       animation: hero-rise 600ms var(--ease-out-expo) 280ms both;
     }
+  }
+
+  /* "Recent work" — 3 featured cards below the hero. */
+  .home__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    text-transform: lowercase;
+  }
+
+  .home__work {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .home__work-head {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .home__work-title {
+    font-family: var(--font-display);
+    font-size: var(--type-28);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+  }
+
+  .home__work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-5);
+  }
+
+  .home__work-more {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .home__work-more a {
+    color: var(--color-action);
+    text-decoration: none;
+  }
+
+  .home__work-more a:hover,
+  .home__work-more a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 </style>
