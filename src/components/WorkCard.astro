@@ -2,18 +2,19 @@
 import type { CollectionEntry } from "astro:content";
 
 interface Props {
-  entry: CollectionEntry<"work">;
+  entry: CollectionEntry<"work"> | CollectionEntry<"work-es">;
   size?: "default" | "feature";
 }
 
 const { entry, size = "default" } = Astro.props;
 const { title, summary, tags, period, company } = entry.data;
 const slug = entry.id.replace(/\.(md|mdx)$/, "");
+const localePrefix = entry.collection === "work-es" ? "/es" : "";
 ---
 
 <a
   class:list={["work-card", `work-card--${size}`]}
-  href={`/work/${slug}`}
+  href={`${localePrefix}/work/${slug}`}
   aria-label={`${title} — read case study`}
 >
   <div class="work-card__meta">

@@ -1,0 +1,94 @@
+---
+/*
+ * LocaleSwitcher.
+ *
+ * Static rendering: surfaces `en` + `es` chips with `aria-current` on the
+ * active one. The vanilla TS script rewrites the `href` on each chip
+ * *client-side* to preserve the current pathname when toggling — so a user
+ * reading `/work/linkedin-coach` who hits "es" lands on
+ * `/es/work/linkedin-coach`, not `/es`. SPA-style without shipping a router.
+ */
+
+import { t, type Locale, withLocale } from "~/lib/i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const path = Astro.url.pathname.replace(/\/$/, "") || "/";
+const enHref = withLocale(path, "en");
+const esHref = withLocale(path, "es");
+---
+
+<nav class="locale" aria-label={t(locale, "localeSwitcher.aria")}>
+  <a
+    class:list={["locale__chip", locale === "en" && "is-active"]}
+    href={enHref}
+    aria-current={locale === "en" ? "true" : undefined}
+    data-locale-link="en"
+  >{t(locale, "localeSwitcher.en")}</a>
+  <span class="locale__sep" aria-hidden="true">·</span>
+  <a
+    class:list={["locale__chip", locale === "es" && "is-active"]}
+    href={esHref}
+    aria-current={locale === "es" ? "true" : undefined}
+    data-locale-link="es"
+  >{t(locale, "localeSwitcher.es")}</a>
+</nav>
+
+<script>
+  /*
+   * Rewrite the locale chips' hrefs on load + on Astro view transitions, so
+   * the chip always navigates to the *current* pathname's other-locale
+   * counterpart rather than the locale root.
+   */
+  function update() {
+    const path = location.pathname.replace(/\/$/, "") || "/";
+    const stripLocale = (p: string): string => {
+      if (p === "/es") return "/";
+      if (p.startsWith("/es/")) return p.slice("/es".length);
+      return p;
+    };
+    const stripped = stripLocale(path);
+    const enLink = document.querySelector<HTMLAnchorElement>("[data-locale-link='en']");
+    const esLink = document.querySelector<HTMLAnchorElement>("[data-locale-link='es']");
+    if (enLink) enLink.href = stripped;
+    if (esLink) esLink.href = stripped === "/" ? "/es" : `/es${stripped}`;
+  }
+  update();
+  document.addEventListener("astro:after-swap", update);
+</script>
+
+<style>
+  .locale {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .locale__chip {
+    color: var(--color-text-muted);
+    text-decoration: none;
+    text-transform: lowercase;
+    padding-block: var(--space-1);
+    transition: color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .locale__chip.is-active {
+    color: var(--color-text-default);
+  }
+
+  .locale__chip:hover,
+  .locale__chip:focus-visible {
+    color: var(--color-action);
+  }
+
+  .locale__sep {
+    color: var(--color-text-subtle);
+  }
+</style>

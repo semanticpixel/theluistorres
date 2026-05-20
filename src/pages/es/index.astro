@@ -1,0 +1,185 @@
+---
+import Base from "~/layouts/Base.astro";
+import HeroName from "~/components/HeroName.astro";
+import WorkCard from "~/components/WorkCard.astro";
+import Contributions from "~/components/Contributions.astro";
+import ContributionsInteractive from "~/components/ContributionsInteractive.astro";
+import { listWorkForLocale } from "~/lib/content";
+import { t } from "~/lib/i18n";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+const locale = "es";
+
+const all = await listWorkForLocale(locale);
+const featured = all
+  .filter(({ entry }) => entry.data.featured)
+  .sort((a, b) => b.entry.data.date.valueOf() - a.entry.data.date.valueOf())
+  .slice(0, 3);
+
+interface Snapshot {
+  lastUpdated: string;
+  meta: { totalContributions: number; streak: number; todayCount: number };
+}
+let stats: Snapshot["meta"] | null = null;
+let synced: string | null = null;
+try {
+  const raw = readFileSync(resolve(process.cwd(), "public/data/contributions.json"), "utf8");
+  const snapshot: Snapshot = JSON.parse(raw);
+  stats = snapshot.meta;
+  synced = new Date(snapshot.lastUpdated).toISOString().slice(0, 10);
+} catch (_) {
+  /* pending first sync */
+}
+---
+
+<Base title="Luis Torres" description="Ingeniero de diseño construyendo para la web.">
+  <main class="home">
+    <section class="hero">
+      <div class="hero__graph" aria-hidden="true">
+        <Contributions />
+      </div>
+
+      <div class="hero__type">
+        <HeroName name="Luis Torres" />
+        <p class="hero__pitch">{t(locale, "hero.pitch")}</p>
+        <p class="hero__bio">{t(locale, "hero.bio")}</p>
+        <p class="hero__stat">
+          <span class="hero__stat-rule" aria-hidden="true">────</span>
+          {stats ? (
+            <span class="hero__stat-text">
+              {stats.totalContributions.toLocaleString("es")} contribuciones · {stats.streak} días seguidos · sincronizado {synced}
+            </span>
+          ) : (
+            <span class="hero__stat-text">{t(locale, "hero.statPending")}</span>
+          )}
+        </p>
+      </div>
+    </section>
+
+    <ContributionsInteractive />
+
+    {featured.length > 0 && (
+      <section class="home__work" aria-labelledby="featured-work-heading">
+        <header class="home__work-head">
+          <p class="home__eyebrow">{t(locale, "home.recentWorkEyebrow")}</p>
+          <h2 id="featured-work-heading" class="home__work-title">{t(locale, "home.recentWorkTitle")}</h2>
+        </header>
+        <div class="home__work-grid">
+          {featured.map(({ entry }) => <WorkCard entry={entry} />)}
+        </div>
+        <p class="home__work-more">
+          <a href="/es/work">{t(locale, "home.readAllStudies")}</a>
+        </p>
+      </section>
+    )}
+  </main>
+</Base>
+
+<style>
+  .home {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-7) var(--space-5) var(--space-9);
+    display: grid;
+    gap: var(--space-9);
+  }
+
+  .hero {
+    position: relative;
+    isolation: isolate;
+    min-block-size: 60svh;
+    display: grid;
+    align-content: center;
+    padding-block: var(--space-7);
+  }
+
+  .hero__graph {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    display: flex;
+    align-items: end;
+    justify-content: end;
+    overflow: hidden;
+  }
+
+  .hero__type {
+    display: grid;
+    gap: var(--space-5);
+    max-width: 56ch;
+  }
+
+  .hero__pitch {
+    font-family: var(--font-body);
+    font-size: var(--type-21);
+    line-height: var(--line-snug);
+    color: var(--color-text-muted);
+    max-width: 32ch;
+  }
+
+  .hero__bio {
+    font-family: var(--font-body);
+    font-size: var(--type-16);
+    color: var(--color-text-subtle);
+  }
+
+  .hero__stat {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    letter-spacing: var(--tracking-wide);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+  }
+
+  .hero__stat-rule { color: var(--color-text-subtle); }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes hero-rise {
+      from { opacity: 0; transform: translateY(0.5rem); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .hero__type > :global(.hero-name) { animation: hero-rise 600ms var(--ease-out-expo) both; }
+    .hero__pitch { animation: hero-rise 600ms var(--ease-out-expo) 120ms both; }
+    .hero__bio { animation: hero-rise 600ms var(--ease-out-expo) 200ms both; }
+    .hero__stat { animation: hero-rise 600ms var(--ease-out-expo) 280ms both; }
+  }
+
+  .home__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    text-transform: lowercase;
+  }
+
+  .home__work { display: grid; gap: var(--space-5); }
+  .home__work-head { display: grid; gap: var(--space-2); }
+  .home__work-title {
+    font-family: var(--font-display);
+    font-size: var(--type-28);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+  }
+  .home__work-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-5);
+  }
+  .home__work-more {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+  }
+  .home__work-more a { color: var(--color-action); text-decoration: none; }
+  .home__work-more a:hover,
+  .home__work-more a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>

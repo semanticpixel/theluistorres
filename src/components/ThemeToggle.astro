@@ -7,21 +7,37 @@
  * handles user interaction: toggle [data-theme] on <html>, persist to
  * localStorage. The button itself is just three states (auto · light · dark)
  * cycling on each click.
+ *
+ * Strings come from the i18n bundle so the label reads in the active
+ * locale. Localized labels for each state are emitted as data-* attributes
+ * the script reads.
  */
+
+import { t, type Locale } from "~/lib/i18n";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.props;
 ---
 
-<button class="theme-toggle" type="button" aria-label="toggle theme" data-theme-toggle>
+<button
+  class="theme-toggle"
+  type="button"
+  aria-label={t(locale, "themeToggle.aria")}
+  data-theme-toggle
+  data-theme-label-auto={t(locale, "themeToggle.auto")}
+  data-theme-label-light={t(locale, "themeToggle.light")}
+  data-theme-label-dark={t(locale, "themeToggle.dark")}
+>
   <span class="theme-toggle__icon theme-toggle__icon--auto" aria-hidden="true">◐</span>
   <span class="theme-toggle__icon theme-toggle__icon--light" aria-hidden="true">○</span>
   <span class="theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true">●</span>
-  <span class="theme-toggle__label" data-theme-label>auto</span>
+  <span class="theme-toggle__label" data-theme-label>{t(locale, "themeToggle.auto")}</span>
 </button>
 
 <script>
-  /*
-   * State: "auto" (no override — follow system), "light", "dark".
-   * Storage key is "theme" — matches the pre-paint script in Base.astro.
-   */
   type ThemeChoice = "auto" | "light" | "dark";
 
   const KEY = "theme";
@@ -35,9 +51,7 @@
     try {
       const v = localStorage.getItem(KEY);
       if (v === "light" || v === "dark") return v;
-    } catch (_) {
-      /* private mode etc. */
-    }
+    } catch (_) {}
     return "auto";
   }
 
@@ -49,7 +63,10 @@
       root.dataset.theme = choice;
       try { localStorage.setItem(KEY, choice); } catch (_) {}
     }
-    if (label) label.textContent = choice;
+    if (label && button) {
+      const localized = button.getAttribute(`data-theme-label-${choice}`);
+      label.textContent = localized ?? choice;
+    }
     button?.setAttribute("data-current", choice);
   }
 
@@ -100,7 +117,6 @@
     display: inline;
   }
 
-  /* When no data-current yet (pre-hydration), show the auto glyph */
   .theme-toggle:not([data-current]) .theme-toggle__icon--auto {
     display: inline;
   }

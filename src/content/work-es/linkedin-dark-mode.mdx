@@ -1,0 +1,44 @@
+---
+title: "LinkedIn Modo Oscuro"
+summary: "Una migración de tokens de dos años que convirtió el modo oscuro de un ajuste en infraestructura."
+tags: ["design-systems", "color", "accesibilidad"]
+date: 2023-05-12
+featured: true
+role: "Design Engineer"
+company: "LinkedIn"
+period: "2021–2023"
+---
+
+> 📝 **Borrador de Claude — pendiente de revisión por Luis.** El encuadre lee
+> limpio; Movimiento + Resultado necesitan el relato en primera persona de Luis
+> sobre la estrategia de despliegue real.
+
+El modo oscuro parece un toggle y en realidad es una reescritura de tokens. En un producto del tamaño de LinkedIn, "lanzar modo oscuro" significa inventariar cada hex hardcodeado en el código, decidir qué *significaba* semánticamente, y luego hilar un token semántico a través de suficientes superficies para que el toggle tenga dónde actuar.
+
+## Contexto
+
+La mayoría de los fallos de "lanzar modo oscuro" no son visuales — son organizativos. El equipo que posee una superficie particular tiene sus propios valores de color, sus propias opiniones de marca, sus propios plazos. Un esfuerzo central de design-systems necesita una historia de migración que permita a cada superficie aterrizar a su propio ritmo sin bifurcar la paleta.
+
+## Movimiento
+
+*Esqueleto — necesita el relato en primera persona de Luis:*
+
+- El modelo de tokens semánticos en el que aterrizaste (y lo que rechazaste)
+- El patrón de migración que dejó a los equipos lanzar superficies correctas en modo oscuro de forma incremental
+- Cómo manejaste la cola larga — ilustraciones, colores de marca, embeds de terceros — sin bloquear el lanzamiento
+
+## Resultado
+
+*Esqueleto — necesita la historia de lanzamiento de Luis:*
+
+- Secuencia de despliegue (geografías, superficies, dogfooding interno)
+- El trabajo de herramientas internas / documentación que hizo legible el modelo de tokens para ingenieros que no son del equipo de sistemas
+- Cómo se veía el conteo de migración cuando lo declaraste completo
+
+## Qué haría diferente
+
+*Esqueleto — necesita la retro de Luis:*
+
+- El token que nombré mal (y todavía lamento)
+- Un paso de migración que reordenaría
+- Lo que el modo dual hace obvio en código de producción pero que las herramientas de diseño todavía esconden

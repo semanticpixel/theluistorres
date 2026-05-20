@@ -1,29 +1,37 @@
 ---
+import { t, type Locale } from "~/lib/i18n";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.props;
+
 const buildIso = new Date().toISOString();
 const buildShort = buildIso.slice(0, 16).replace("T", " ");
 ---
 
 <footer class="footer">
   <div class="footer__inner">
-    <p class="footer__refrain">I learn every day.</p>
+    <p class="footer__refrain">{t(locale, "footer.refrain")}</p>
 
     <ul class="footer__social" role="list">
       <li>
-        <a class="footer__link" href="https://github.com/semanticpixel" rel="me noopener" target="_blank">github</a>
+        <a class="footer__link" href="https://github.com/semanticpixel" rel="me noopener" target="_blank">{t(locale, "footer.social.github")}</a>
       </li>
       <li>
-        <a class="footer__link" href="https://www.linkedin.com/in/projectluis/" rel="me noopener" target="_blank">linkedin</a>
+        <a class="footer__link" href="https://www.linkedin.com/in/projectluis/" rel="me noopener" target="_blank">{t(locale, "footer.social.linkedin")}</a>
       </li>
       <li>
-        <a class="footer__link" href="https://twitter.com/projectluis" rel="me noopener" target="_blank">twitter</a>
+        <a class="footer__link" href="https://twitter.com/projectluis" rel="me noopener" target="_blank">{t(locale, "footer.social.twitter")}</a>
       </li>
       <li>
-        <a class="footer__link" href="mailto:hi@projectluis.com">email</a>
+        <a class="footer__link" href="mailto:hi@projectluis.com">{t(locale, "footer.social.email")}</a>
       </li>
     </ul>
 
     <p class="footer__meta">
-      <span class="footer__meta-key">last deployed</span>
+      <span class="footer__meta-key">{t(locale, "footer.lastDeployed")}</span>
       <time datetime={buildIso} class="footer__meta-value">{buildShort}Z</time>
     </p>
   </div>

@@ -1,0 +1,160 @@
+---
+import Base from "~/layouts/Base.astro";
+import Prose from "~/components/Prose.astro";
+import FallbackRibbon from "~/components/FallbackRibbon.astro";
+import { getCollection, render } from "astro:content";
+
+const locale = "es" as const;
+
+export async function getStaticPaths() {
+  /* All English slugs become valid Spanish routes — those without a
+   * translation fall back to the English body behind a ribbon. */
+  const english = await getCollection("work");
+  return english.map(entry => ({
+    params: { slug: entry.id.replace(/\.(md|mdx)$/, "") },
+  }));
+}
+
+const { slug } = Astro.params;
+
+/* getEntry directly so we resolve the locale-specific entry (or fall back). */
+import { getEntry } from "astro:content";
+
+let entry = await getEntry("work-es", slug as string);
+let translated = !!entry;
+if (!entry) {
+  entry = (await getEntry("work", slug as string)) as any;
+}
+if (!entry) {
+  return Astro.redirect("/es/work");
+}
+
+const { Content } = await render(entry);
+const { title, summary, role, company, period, tags, date } = entry.data;
+const dateIso = date.toISOString().slice(0, 10);
+---
+
+<Base title={`${title} — Luis Torres`} description={summary}>
+  {!translated && <FallbackRibbon locale={locale} />}
+  <article class="case">
+    <header class="case__head">
+      <p class="case__eyebrow">caso de estudio</p>
+      <h1 class="case__title">{title}</h1>
+      <p class="case__summary">{summary}</p>
+
+      <dl class="case__meta">
+        {company && (<><dt>empresa</dt><dd>{company}</dd></>)}
+        {role && (<><dt>rol</dt><dd>{role}</dd></>)}
+        {period && (<><dt>periodo</dt><dd>{period}</dd></>)}
+        <dt>publicado</dt>
+        <dd><time datetime={dateIso}>{dateIso}</time></dd>
+      </dl>
+    </header>
+
+    <Prose>
+      <Content />
+    </Prose>
+
+    {tags.length > 0 && (
+      <footer class="case__foot">
+        <ul class="case__tags" role="list">
+          {tags.map(tag => (<li class="case__tag">#{tag}</li>))}
+        </ul>
+        <p class="case__back"><a href="/es/work">← todos los casos de estudio</a></p>
+      </footer>
+    )}
+  </article>
+</Base>
+
+<style>
+  .case {
+    max-width: var(--container-prose);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-10);
+  }
+
+  .case__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-7);
+    margin-block-end: var(--space-7);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .case__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .case__title {
+    font-family: var(--font-display);
+    font-size: var(--type-40);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .case__summary {
+    color: var(--color-text-muted);
+    font-size: var(--type-21);
+    line-height: var(--line-snug);
+    max-width: 60ch;
+  }
+
+  .case__meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-1) var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    text-transform: lowercase;
+    letter-spacing: var(--tracking-wide);
+    margin-block-start: var(--space-3);
+  }
+
+  .case__meta dt { color: var(--color-text-subtle); }
+  .case__meta dd { margin: 0; color: var(--color-text-muted); }
+
+  .case__foot {
+    margin-block-start: var(--space-8);
+    padding-block-start: var(--space-5);
+    border-block-start: 1px solid var(--color-border);
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .case__tags {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .case__tag {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    text-transform: lowercase;
+  }
+
+  .case__back {
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+  }
+
+  .case__back a {
+    color: var(--color-action);
+    text-decoration: none;
+  }
+
+  .case__back a:hover,
+  .case__back a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>
