@@ -4,5 +4,9 @@
   "version": "1.0.0",
   "license": "MIT",
   "description": "TheLuisTorres",
-  "packageManager": "yarn@4.8.1"
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  }
 }
