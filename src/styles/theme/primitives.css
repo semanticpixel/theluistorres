@@ -1,0 +1,50 @@
+/*
+ * Primitive color scales.
+ * Stable, raw values. Components should consume the semantic layer instead —
+ * primitives change rarely; semantics change with brand.
+ *
+ * The `--terracotta-60` step is pinned to #C2625E to preserve the existing
+ * --colorAction value across the migration. Other steps are tuned around it.
+ */
+
+:root {
+  /* bone — warm off-white surface family */
+  --bone-0:   #fafaf7;
+  --bone-20:  #f4f2ec;
+  --bone-40:  #e8e4da;
+  --bone-60:  #d4cfc2;
+  --bone-80:  #9e9a8e;
+  --bone-100: #4a4842;
+
+  /* slate — cool neutral text + structure */
+  --slate-0:   #f5f7fa;
+  --slate-20:  #e2e6eb;
+  --slate-40:  #b4bdc6;
+  --slate-60:  #6f7984;
+  --slate-80:  #3d444b;
+  --slate-100: #1a1d20;
+
+  /* terracotta — primary action / brand accent (--terracotta-60 is load-bearing) */
+  --terracotta-0:   #fdf1ee;
+  --terracotta-20:  #f2c8c0;
+  --terracotta-40:  #dc8e84;
+  --terracotta-60:  #c2625e;
+  --terracotta-80:  #8e423f;
+  --terracotta-100: #5a2724;
+
+  /* moss — quiet positive / "still alive" signals */
+  --moss-0:   #eef3eb;
+  --moss-20:  #c9d5bd;
+  --moss-40:  #8fa37c;
+  --moss-60:  #5e7549;
+  --moss-80:  #3e4f2e;
+  --moss-100: #232e1a;
+
+  /* amber — warm highlight / today / pulse */
+  --amber-0:   #fbf1de;
+  --amber-20:  #f0d894;
+  --amber-40:  #ddb257;
+  --amber-60:  #b68628;
+  --amber-80:  #7a5916;
+  --amber-100: #443009;
+}

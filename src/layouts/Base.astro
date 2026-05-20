@@ -1,0 +1,53 @@
+---
+import { ClientRouter } from "astro:transitions";
+import "~/styles/index.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  /*
+   * View Transitions ship Astro's small client runtime. Default-on so route
+   * changes feel deliberate; pages that need a strict zero-JS budget (e.g.
+   * /theme, /404) opt out.
+   */
+  transitions?: boolean;
+}
+
+const { title, description = "Luis Torres — design engineer.", transitions = true } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+
+    <script is:inline>
+      /*
+       * Pre-paint theme resolution: read localStorage, set data-theme on <html>
+       * before first paint to prevent a flash of incorrect theme. Falls back to
+       * system preference when nothing is stored.
+       */
+      (function () {
+        try {
+          const stored = localStorage.getItem("theme");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.dataset.theme = stored;
+          }
+        } catch (_) {
+          /* private mode, etc — leave system preference in charge */
+        }
+      })();
+    </script>
+
+    {transitions && <ClientRouter />}
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

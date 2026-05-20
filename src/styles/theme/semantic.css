@@ -1,0 +1,82 @@
+/*
+ * Semantic tokens. Consumed everywhere outside this file.
+ *
+ * Light + dark resolve via `light-dark()` — the active scheme comes from
+ * `color-scheme: light dark` on :root, optionally overridden by [data-theme].
+ * Forced-colors and prefers-contrast: more get explicit overrides further down.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* surface */
+  --color-bg:         light-dark(var(--bone-0),    var(--slate-100));
+  --color-surface:    light-dark(var(--bone-20),   var(--slate-80));
+  --color-surface-2:  light-dark(var(--bone-40),   #242a30);
+
+  /* text */
+  --color-text-default: light-dark(var(--slate-100), var(--bone-20));
+  --color-text-muted:   light-dark(var(--slate-60),  var(--bone-60));
+  --color-text-subtle:  light-dark(var(--slate-40),  var(--slate-40));
+  --color-text-inverse: light-dark(var(--bone-0),    var(--slate-100));
+
+  /* border */
+  --color-border:        light-dark(var(--bone-40), #2a3036);
+  --color-border-strong: light-dark(var(--slate-40), var(--slate-60));
+
+  /* action — keeps the existing --colorAction value intact */
+  --color-action:        var(--terracotta-60);
+  --color-action-hover:  light-dark(var(--terracotta-80), var(--terracotta-40));
+  --color-action-text:   var(--bone-0);
+
+  /* signals */
+  --color-success: var(--moss-60);
+  --color-warning: var(--amber-60);
+  --color-danger:  var(--terracotta-80);
+
+  /* focus */
+  --color-focus: var(--terracotta-60);
+
+  /* legacy alias — anything still referencing --colorAction continues to work */
+  --colorAction: var(--color-action);
+}
+
+/* Explicit theme overrides — `data-theme` set by ThemeToggle wins over system. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* High-contrast preference — tighten text/bg and strengthen borders. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-bg:           light-dark(#ffffff,    #000000);
+    --color-text-default: light-dark(#000000,    #ffffff);
+    --color-text-muted:   light-dark(var(--slate-100), var(--bone-0));
+    --color-border:       light-dark(#000000,    #ffffff);
+    --color-action:       light-dark(var(--terracotta-100), var(--terracotta-20));
+    --color-focus:        light-dark(#000000,    #ffffff);
+  }
+}
+
+/* Windows High Contrast / forced-colors — hand control to the OS. */
+@media (forced-colors: active) {
+  :root {
+    --color-bg:            Canvas;
+    --color-surface:       Canvas;
+    --color-surface-2:     Canvas;
+    --color-text-default:  CanvasText;
+    --color-text-muted:    CanvasText;
+    --color-text-subtle:   GrayText;
+    --color-text-inverse:  Canvas;
+    --color-border:        CanvasText;
+    --color-border-strong: CanvasText;
+    --color-action:        LinkText;
+    --color-action-hover:  ActiveText;
+    --color-action-text:   Canvas;
+    --color-focus:         Highlight;
+  }
+}
