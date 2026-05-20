@@ -1,0 +1,138 @@
+---
+import Base from "~/layouts/Base.astro";
+import FallbackRibbon from "~/components/FallbackRibbon.astro";
+import { getCollection } from "astro:content";
+
+const locale = "es" as const;
+const entries = (await getCollection("writing")).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf(),
+);
+---
+
+<Base title="Escritos — Luis Torres" description="Notas sobre ingeniería de diseño — patrones, decisiones, los pequeños detalles.">
+  <FallbackRibbon locale={locale} />
+  <main class="writing">
+    <header class="writing__head">
+      <p class="writing__eyebrow">escritos</p>
+      <h1 class="writing__title">Notas y gemas</h1>
+      <p class="writing__lede">
+        Publico la mayoría de cosas en <a href="https://ui-gems.com">UI Gems</a> — un cuaderno
+        de las pequeñas interacciones que vale la pena señalar. Las entradas de abajo enlazan
+        afuera. La casa de los escritos está allá; esto es el índice.
+      </p>
+    </header>
+
+    {entries.length === 0 ? (
+      <p class="writing__empty">Aún no hay entradas. Las nuevas publicaciones aparecen aquí cuando se lanzan en UI Gems.</p>
+    ) : (
+      <ul class="writing__list" role="list">
+        {entries.map(entry => (
+          <li>
+            <a class="writing__item" href={entry.data.externalUrl} rel="noopener" target="_blank">
+              <h2 class="writing__item-title">{entry.data.title}</h2>
+              <p class="writing__item-summary">{entry.data.summary}</p>
+              <p class="writing__item-meta">
+                <time datetime={entry.data.date.toISOString().slice(0, 10)}>
+                  {entry.data.date.toISOString().slice(0, 10)}
+                </time>
+                {entry.data.readingTime && <> · {entry.data.readingTime}</>}
+                <span class="writing__item-link" aria-hidden="true"> · leer en ui-gems.com →</span>
+              </p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )}
+  </main>
+</Base>
+
+<style>
+  .writing {
+    max-width: var(--container-prose);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-10);
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .writing__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .writing__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .writing__title {
+    font-family: var(--font-display);
+    font-size: var(--type-64);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .writing__lede { color: var(--color-text-muted); }
+  .writing__lede a {
+    color: var(--color-action);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  .writing__empty {
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+  }
+
+  .writing__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .writing__item {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-5);
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition: border-color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .writing__item:hover,
+  .writing__item:focus-visible {
+    border-color: var(--color-border-strong);
+  }
+
+  .writing__item-title {
+    font-family: var(--font-display);
+    font-size: var(--type-21);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+    margin: 0;
+  }
+
+  .writing__item-summary { color: var(--color-text-muted); margin: 0; }
+
+  .writing__item-meta {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    letter-spacing: var(--tracking-wide);
+    margin: 0;
+  }
+
+  .writing__item-link { color: var(--color-action); }
+</style>

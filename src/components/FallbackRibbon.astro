@@ -1,0 +1,43 @@
+---
+/*
+ * Surfaces "this page hasn't been translated yet" when a localized route
+ * falls back to the English content. The ribbon is permanent, not
+ * dismissible — the reader needs to know the language they're getting.
+ */
+
+import { t, type Locale } from "~/lib/i18n";
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<aside class="fallback-ribbon" role="status">
+  <p>{t(locale, "work.fallbackRibbon")}</p>
+</aside>
+
+<style>
+  .fallback-ribbon {
+    background: var(--terracotta-20);
+    color: var(--terracotta-100);
+    padding: var(--space-3) var(--space-5);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .fallback-ribbon p {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+  }
+
+  /* Dark mode: terracotta-20 is too washed; tweak to a deeper warm hue. */
+  :root[data-theme="dark"] .fallback-ribbon,
+  :root:not([data-theme]) .fallback-ribbon {
+    background: light-dark(var(--terracotta-20), var(--terracotta-80));
+    color: light-dark(var(--terracotta-100), var(--bone-0));
+  }
+</style>
