@@ -25,7 +25,7 @@ const anyUntranslated = entries.some(e => !e.translated);
     </header>
 
     <div class="work-index__grid">
-      {entries.map(({ entry }) => <WorkCard entry={entry} />)}
+      {entries.map(({ entry }) => <WorkCard entry={entry} headingLevel={2} />)}
     </div>
   </main>
 </Base>

@@ -16,17 +16,20 @@
 
   /* text */
   --color-text-default: light-dark(var(--slate-100), var(--bone-20));
-  --color-text-muted:   light-dark(var(--slate-60),  var(--bone-60));
-  --color-text-subtle:  light-dark(var(--slate-40),  var(--slate-40));
+  --color-text-muted:   light-dark(var(--slate-70),  var(--bone-60));
+  --color-text-subtle:  light-dark(var(--slate-70),  var(--slate-40));
   --color-text-inverse: light-dark(var(--bone-0),    var(--slate-100));
 
   /* border */
   --color-border:        light-dark(var(--bone-40), #2a3036);
   --color-border-strong: light-dark(var(--slate-40), var(--slate-60));
 
-  /* action — keeps the existing --colorAction value intact */
-  --color-action:        var(--terracotta-60);
-  --color-action-hover:  light-dark(var(--terracotta-80), var(--terracotta-40));
+  /* action — terracotta-70 in light mode for AA contrast on small text;
+   * terracotta-40 in dark mode for the same reason. terracotta-60 remains
+   * the brand swatch but is reserved for large display surfaces (hero
+   * accents, focus rings) where 3:1 contrast suffices. */
+  --color-action:        light-dark(var(--terracotta-70), var(--terracotta-40));
+  --color-action-hover:  light-dark(var(--terracotta-80), var(--terracotta-20));
   --color-action-text:   var(--bone-0);
 
   /* signals */
