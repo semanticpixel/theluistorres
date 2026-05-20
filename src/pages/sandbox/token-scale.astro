@@ -1,0 +1,151 @@
+---
+import Base from "~/layouts/Base.astro";
+
+const scales = ["bone", "slate", "terracotta", "moss", "amber"] as const;
+const steps = [0, 20, 40, 60, 80, 100] as const;
+---
+
+<Base title="Token-scale visualizer — Sandbox" description="A perceptual readout of the five primitive color scales." transitions={false}>
+  <main class="lab">
+    <header class="lab__head">
+      <p class="lab__eyebrow"><a href="/sandbox">sandbox</a> / token-scale</p>
+      <h1 class="lab__title">Token-scale visualizer</h1>
+      <p class="lab__lede">
+        Each row is a six-step ramp from the same primitive family. Bars are sized by relative
+        lightness — useful for catching perceptual gaps that hex values lie about. Toggle the
+        system theme to compare; the values come from <code>:root</code> so this is the same
+        truth the rest of the site reads from.
+      </p>
+    </header>
+
+    <section class="ramps">
+      {scales.map(family => (
+        <div class="ramp">
+          <h2 class="ramp__name">{family}</h2>
+          <ol class="ramp__row" role="list">
+            {steps.map((step, i) => (
+              <li
+                class="ramp__cell"
+                style={`
+                  background: var(--${family}-${step});
+                  --lightness: ${100 - i * 16}%;
+                `}
+              >
+                <span class="ramp__label">{family}-{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ))}
+    </section>
+
+    <aside class="lab__notes">
+      <p>
+        Worth noting: <code>bone-80</code> is the closest neutral to body text in light mode;
+        <code>terracotta-60</code> is the single brand chromatic. Everything else is structure.
+      </p>
+    </aside>
+  </main>
+</Base>
+
+<style>
+  .lab {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-7) var(--space-5) var(--space-9);
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .lab__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+    max-width: 56ch;
+  }
+
+  .lab__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .lab__eyebrow a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .lab__eyebrow a:hover { color: var(--color-action); }
+
+  .lab__title {
+    font-family: var(--font-display);
+    font-size: var(--type-40);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .lab__lede {
+    color: var(--color-text-muted);
+  }
+
+  .ramps {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .ramp {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .ramp__name {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-default);
+    text-transform: lowercase;
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .ramp__row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+  }
+
+  .ramp__cell {
+    aspect-ratio: 5 / 1;
+    display: flex;
+    align-items: end;
+    padding: var(--space-2);
+  }
+
+  .ramp__label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: var(--tracking-wide);
+    color: light-dark(rgba(0, 0, 0, 0.55), rgba(255, 255, 255, 0.7));
+    mix-blend-mode: difference;
+  }
+
+  .lab__notes {
+    color: var(--color-text-muted);
+    max-width: 60ch;
+  }
+
+  .lab__notes code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--color-surface);
+    padding: 0.1em 0.3em;
+    border-radius: var(--radius-sm);
+  }
+</style>
