@@ -1,0 +1,88 @@
+---
+const buildIso = new Date().toISOString();
+const buildShort = buildIso.slice(0, 16).replace("T", " ");
+---
+
+<footer class="footer">
+  <div class="footer__inner">
+    <p class="footer__refrain">I learn every day.</p>
+
+    <ul class="footer__social" role="list">
+      <li>
+        <a class="footer__link" href="https://github.com/semanticpixel" rel="me noopener" target="_blank">github</a>
+      </li>
+      <li>
+        <a class="footer__link" href="https://www.linkedin.com/in/projectluis/" rel="me noopener" target="_blank">linkedin</a>
+      </li>
+      <li>
+        <a class="footer__link" href="https://twitter.com/projectluis" rel="me noopener" target="_blank">twitter</a>
+      </li>
+      <li>
+        <a class="footer__link" href="mailto:hi@projectluis.com">email</a>
+      </li>
+    </ul>
+
+    <p class="footer__meta">
+      <span class="footer__meta-key">last deployed</span>
+      <time datetime={buildIso} class="footer__meta-value">{buildShort}Z</time>
+    </p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-block-start: var(--space-10);
+    padding: var(--space-7) var(--space-5) var(--space-6);
+    border-block-start: 1px solid var(--color-border);
+  }
+
+  .footer__inner {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .footer__refrain {
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .footer__social {
+    display: flex;
+    gap: var(--space-5);
+    flex-wrap: wrap;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .footer__link {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    text-transform: lowercase;
+    transition: color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .footer__link:hover,
+  .footer__link:focus-visible {
+    color: var(--color-action);
+  }
+
+  .footer__meta {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .footer__meta-key {
+    text-transform: lowercase;
+  }
+</style>
