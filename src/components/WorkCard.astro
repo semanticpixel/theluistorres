@@ -4,25 +4,32 @@ import type { CollectionEntry } from "astro:content";
 interface Props {
   entry: CollectionEntry<"work"> | CollectionEntry<"work-es">;
   size?: "default" | "feature";
+  /*
+   * Heading level for the card title. Use `2` when the card sits directly
+   * under the page `<h1>` (e.g. /work index) to keep the outline
+   * sequentially descending; default `3` matches the home page where the
+   * cards live inside an `<h2>` section.
+   */
+  headingLevel?: 2 | 3;
 }
 
-const { entry, size = "default" } = Astro.props;
+const { entry, size = "default", headingLevel = 3 } = Astro.props;
 const { title, summary, tags, period, company } = entry.data;
 const slug = entry.id.replace(/\.(md|mdx)$/, "");
 const localePrefix = entry.collection === "work-es" ? "/es" : "";
+const Heading = `h${headingLevel}` as const;
 ---
 
 <a
   class:list={["work-card", `work-card--${size}`]}
   href={`${localePrefix}/work/${slug}`}
-  aria-label={`${title} — read case study`}
 >
   <div class="work-card__meta">
     {period && <span class="work-card__period">{period}</span>}
     {company && <span class="work-card__company">{company}</span>}
   </div>
 
-  <h3 class="work-card__title">{title}</h3>
+  <Heading class="work-card__title">{title}</Heading>
 
   <p class="work-card__summary">{summary}</p>
 

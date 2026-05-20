@@ -141,8 +141,8 @@ import Prose from "~/components/Prose.astro";
         Tooltips mirror into <code>aria-live="polite"</code> regions.</li>
         <li>Every animation is gated on <code>prefers-reduced-motion: no-preference</code>,
         and reduced-motion is the default in CI's Lighthouse runs.</li>
-        <li>Color contrast minimums met against both light and dark backgrounds (tested via
-        axe-core in CI when ST-8 lands).</li>
+        <li>Color contrast minimums met against both light and dark backgrounds, enforced by
+        Lighthouse's a11y category (axe-core under the hood) at score &ge; 98 on every PR.</li>
         <li>Semantic HTML first: <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>,
         <code>&lt;article&gt;</code>, real <code>&lt;time datetime&gt;</code> elements, real
         <code>&lt;button type&gt;</code> on every clickable.</li>
@@ -151,7 +151,7 @@ import Prose from "~/components/Prose.astro";
       <h2 id="performance-budgets">7. Performance budgets</h2>
 
       <p>
-        Targets, enforced (or about to be — CI gate lands in ST-8):
+        Targets, enforced in CI on every pull request. Failures block the merge:
       </p>
 
       <ul>
@@ -160,7 +160,17 @@ import Prose from "~/components/Prose.astro";
         <li><strong>CLS</strong> &lt; 0.02</li>
         <li><strong>Home JS</strong> &lt; 8 KB gzipped</li>
         <li><strong>Home CSS</strong> &lt; 12 KB gzipped</li>
+        <li><strong>Lighthouse</strong> performance &amp; SEO &amp; accessibility &ge; 98 on
+        <code>/</code>, <code>/work</code>, <code>/work/linkedin-coach</code></li>
       </ul>
+
+      <p>
+        The gate lives in <code>.github/workflows/ci.yml</code>. Bundle size is measured by a
+        small Node script (<code>scripts/bundle-size.mjs</code>) that gzips every inline and
+        external asset on the home page; Lighthouse runs three times per route via
+        <code>@lhci/cli</code> with the desktop preset. The thresholds aren't aspirational —
+        a regression fails the PR before review.
+      </p>
 
       <p>
         Currently: home ships one external JS chunk (Astro's ClientRouter for View Transitions,

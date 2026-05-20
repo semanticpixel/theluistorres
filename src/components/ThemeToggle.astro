@@ -25,8 +25,9 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
 <button
   class="theme-toggle"
   type="button"
-  aria-label={t(locale, "themeToggle.aria")}
+  aria-label={`${t(locale, "themeToggle.aria")}: ${t(locale, "themeToggle.auto")}`}
   data-theme-toggle
+  data-theme-label-aria={t(locale, "themeToggle.aria")}
   data-theme-label-auto={t(locale, "themeToggle.auto")}
   data-theme-label-light={t(locale, "themeToggle.light")}
   data-theme-label-dark={t(locale, "themeToggle.dark")}
@@ -64,8 +65,12 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
       try { localStorage.setItem(KEY, choice); } catch (_) {}
     }
     if (label && button) {
-      const localized = button.getAttribute(`data-theme-label-${choice}`);
-      label.textContent = localized ?? choice;
+      const localized = button.getAttribute(`data-theme-label-${choice}`) ?? choice;
+      label.textContent = localized;
+      /* Keep aria-label in sync with the visible state so the accessible
+       * name contains the visible text (axe label-content-name-mismatch). */
+      const base = button.getAttribute("data-theme-label-aria") ?? "theme";
+      button.setAttribute("aria-label", `${base}: ${localized}`);
     }
     button?.setAttribute("data-current", choice);
   }
