@@ -1,0 +1,27 @@
+/*
+ * Spatial scale. Powers of root-em with a 1.5 ratio above 16.
+ * Use these tokens instead of raw rem/px — that's how the system stays coherent.
+ */
+
+:root {
+  --space-1:  0.25rem; /* 4  */
+  --space-2:  0.5rem;  /* 8  */
+  --space-3:  0.75rem; /* 12 */
+  --space-4:  1rem;    /* 16 */
+  --space-5:  1.5rem;  /* 24 */
+  --space-6:  2rem;    /* 32 */
+  --space-7:  3rem;    /* 48 */
+  --space-8:  4rem;    /* 64 */
+  --space-9:  6rem;    /* 96 */
+  --space-10: 8rem;    /* 128 */
+  --space-11: 12rem;   /* 192 */
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 16px;
+  --radius-pill: 9999px;
+
+  --container-narrow: 36rem;
+  --container-prose:  44rem;
+  --container-wide:   72rem;
+}

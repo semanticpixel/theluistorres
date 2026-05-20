@@ -1,0 +1,55 @@
+---
+import Base from "~/layouts/Base.astro";
+---
+
+<Base title="Luis Torres" description="Design engineer. I write code that pretends not to be there.">
+  <main class="home">
+    <p class="home__eyebrow">design engineer</p>
+    <h1 class="home__name">Luis Torres</h1>
+    <p class="home__pitch">
+      Token systems, considered motion, the small interactions that make an interface feel hand-built.
+    </p>
+    <p class="home__bio">
+      Currently building tools at the seam between design and code. ST-1 scaffolds this site — the
+      real hero composition lands in ST-2.
+    </p>
+  </main>
+</Base>
+
+<style>
+  .home {
+    max-width: var(--container-prose);
+    margin-inline: auto;
+    padding: var(--space-9) var(--space-5);
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .home__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    text-transform: lowercase;
+  }
+
+  .home__name {
+    font-family: var(--font-display);
+    font-size: var(--type-96);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+  }
+
+  .home__pitch {
+    font-size: var(--type-21);
+    line-height: var(--line-snug);
+    color: var(--color-text-default);
+    max-width: 36ch;
+  }
+
+  .home__bio {
+    color: var(--color-text-muted);
+    max-width: 50ch;
+  }
+</style>

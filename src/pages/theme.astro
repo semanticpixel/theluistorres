@@ -1,0 +1,307 @@
+---
+import Base from "~/layouts/Base.astro";
+
+const colorScales = [
+  { name: "bone", steps: [0, 20, 40, 60, 80, 100] },
+  { name: "slate", steps: [0, 20, 40, 60, 80, 100] },
+  { name: "terracotta", steps: [0, 20, 40, 60, 80, 100] },
+  { name: "moss", steps: [0, 20, 40, 60, 80, 100] },
+  { name: "amber", steps: [0, 20, 40, 60, 80, 100] },
+] as const;
+
+const semanticTokens = [
+  "color-bg",
+  "color-surface",
+  "color-surface-2",
+  "color-text-default",
+  "color-text-muted",
+  "color-text-subtle",
+  "color-text-inverse",
+  "color-border",
+  "color-border-strong",
+  "color-action",
+  "color-action-hover",
+  "color-action-text",
+  "color-success",
+  "color-warning",
+  "color-danger",
+  "color-focus",
+] as const;
+
+const typeScale = [
+  ["type-12", "0.75rem", "stat / footer / chrome"],
+  ["type-14", "0.875rem", "metadata"],
+  ["type-16", "1rem", "body"],
+  ["type-18", "1.125rem", "intro body"],
+  ["type-21", "1.3125rem", "pitch / sub-section"],
+  ["type-28", "1.75rem", "section opener"],
+  ["type-40", "2.5rem", "case-study hero"],
+  ["type-64", "4rem", "page hero"],
+  ["type-96", "6rem", "name treatment"],
+] as const;
+
+const spaceScale = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
+---
+
+<Base title="Theme preview" description="Token scales and primitives." transitions={false}>
+  <main class="theme">
+    <header class="theme__head">
+      <p class="theme__eyebrow">design tokens</p>
+      <h1 class="theme__title">/theme</h1>
+      <p class="theme__lede">
+        Every primitive, semantic, type, and space token consumed by the site. Switch system theme
+        + contrast preference to validate the four-mode matrix (light · dark · prefers-contrast: more · forced-colors: active).
+      </p>
+    </header>
+
+    <section class="theme__section">
+      <h2 class="theme__h2">Color · primitives</h2>
+      {colorScales.map(scale => (
+        <div class="scale">
+          <h3 class="scale__name">{scale.name}</h3>
+          <div class="scale__row">
+            {scale.steps.map(step => (
+              <div class="swatch">
+                <div class="swatch__chip" style={`background: var(--${scale.name}-${step});`}></div>
+                <p class="swatch__name">{scale.name}-{step}</p>
+                <p class="swatch__var">--{scale.name}-{step}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </section>
+
+    <section class="theme__section">
+      <h2 class="theme__h2">Color · semantic</h2>
+      <div class="semantic">
+        {semanticTokens.map(token => (
+          <div class="semantic__row">
+            <div class="semantic__chip" style={`background: var(--${token});`}></div>
+            <code class="semantic__var">--{token}</code>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="theme__section">
+      <h2 class="theme__h2">Type</h2>
+      <div class="types">
+        {typeScale.map(([name, size, note]) => (
+          <div class="type-row">
+            <code class="type-row__var">--{name}</code>
+            <span class="type-row__size">{size}</span>
+            <span class="type-row__sample" style={`font-size: var(--${name});`}>The quick brown fox.</span>
+            <span class="type-row__note">{note}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section class="theme__section">
+      <h2 class="theme__h2">Space</h2>
+      <div class="spaces">
+        {spaceScale.map(n => (
+          <div class="space-row">
+            <code class="space-row__var">--space-{n}</code>
+            <div class="space-row__bar" style={`inline-size: var(--space-${n});`}></div>
+          </div>
+        ))}
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .theme {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-10);
+    display: grid;
+    gap: var(--space-9);
+  }
+
+  .theme__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .theme__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    text-transform: lowercase;
+  }
+
+  .theme__title {
+    font-family: var(--font-display);
+    font-size: var(--type-64);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .theme__lede {
+    color: var(--color-text-muted);
+    max-width: 60ch;
+  }
+
+  .theme__section {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .theme__h2 {
+    font-family: var(--font-display);
+    font-size: var(--type-28);
+    color: var(--color-text-default);
+  }
+
+  /* primitive scales */
+  .scale {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .scale__name {
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+    color: var(--color-text-default);
+    text-transform: lowercase;
+  }
+
+  .scale__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: var(--space-3);
+  }
+
+  .swatch {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .swatch__chip {
+    aspect-ratio: 4 / 3;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+
+  .swatch__name {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-default);
+  }
+
+  .swatch__var {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+  }
+
+  /* semantic */
+  .semantic {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--space-2);
+  }
+
+  .semantic__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+
+  .semantic__chip {
+    inline-size: 1.75rem;
+    block-size: 1.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-border);
+    flex-shrink: 0;
+  }
+
+  .semantic__var {
+    font-size: var(--type-14);
+    color: var(--color-text-default);
+  }
+
+  /* type */
+  .types {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .type-row {
+    display: grid;
+    grid-template-columns: 8rem 5rem 1fr auto;
+    align-items: baseline;
+    gap: var(--space-5);
+    padding-block: var(--space-2);
+    border-block-end: 1px solid var(--color-border);
+  }
+
+  .type-row__var {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+  }
+
+  .type-row__size {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+  }
+
+  .type-row__sample {
+    font-family: var(--font-display);
+    color: var(--color-text-default);
+    line-height: var(--line-snug);
+  }
+
+  .type-row__note {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+  }
+
+  /* space */
+  .spaces {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .space-row {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
+  .space-row__var {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+  }
+
+  .space-row__bar {
+    block-size: 1rem;
+    background: var(--color-action);
+    border-radius: var(--radius-sm);
+  }
+
+  @media (max-width: 640px) {
+    .type-row {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+    .space-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

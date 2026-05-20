@@ -1,0 +1,33 @@
+/*
+ * Type scale. Three families, fluid sizes via clamp().
+ * - Fraunces  → display (hero name, section openers)
+ * - Inter     → body / UI chrome
+ * - JetBrains Mono → stats, metadata, the deliberately-built artifacts
+ */
+
+:root {
+  --font-display: "Fraunces", ui-serif, Georgia, "Times New Roman", serif;
+  --font-body:    "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Fluid type — min, ideal, max at the 1440 viewport baseline. */
+  --type-12: clamp(0.75rem,  0.71rem + 0.18vw, 0.82rem);
+  --type-14: clamp(0.875rem, 0.84rem + 0.18vw, 0.95rem);
+  --type-16: clamp(1rem,     0.96rem + 0.18vw, 1.08rem);
+  --type-18: clamp(1.125rem, 1.08rem + 0.22vw, 1.21rem);
+  --type-21: clamp(1.3125rem, 1.25rem + 0.31vw, 1.43rem);
+  --type-28: clamp(1.75rem,   1.6rem + 0.74vw,  2.06rem);
+  --type-40: clamp(2.5rem,    2.16rem + 1.71vw, 3.25rem);
+  --type-64: clamp(4rem,      3.06rem + 4.68vw, 6.06rem);
+  --type-96: clamp(6rem,      4.4rem + 8vw,     9.5rem);
+
+  --line-tight:   1.1;
+  --line-snug:    1.25;
+  --line-default: 1.5;
+  --line-loose:   1.7;
+
+  --tracking-tight:   -0.02em;
+  --tracking-default: 0;
+  --tracking-wide:    0.02em;
+  --tracking-mono:    0;
+}
