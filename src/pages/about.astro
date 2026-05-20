@@ -1,0 +1,123 @@
+---
+import Base from "~/layouts/Base.astro";
+import Prose from "~/components/Prose.astro";
+
+const beliefs = [
+  "A design system is a *negotiation*, not a deliverable.",
+  "The CSS cascade is a feature. Lean into it.",
+  "Dark mode isn't a color flip — it's a re-derivation.",
+  "\"It's just CSS\" usually means \"I haven't read the spec recently.\"",
+  "Prefer one strong signal color over five medium ones.",
+  "I learn every day.",
+];
+
+const timeline = [
+  { period: "2024 — present", role: "Design Engineer · Superhuman" },
+  { period: "2023", role: "AI experiments · Grammarly" },
+  { period: "2018 — 2023", role: "Design Systems / Infrastructure UX · LinkedIn" },
+  { period: "Earlier", role: "Conversational UI · Amazon" },
+];
+---
+
+<Base title="About — Luis Torres" description="Design engineer. I write code that pretends not to be there.">
+  <main class="about">
+    <Prose>
+      <h1>About</h1>
+
+      <p class="about__lede">I'm Luis. I write code that pretends not to be there.</p>
+
+      <p>
+        At LinkedIn in 2018, I helped found the Infrastructure UX team. We had a problem most
+        product teams have but few teams <em>own</em>: every product was reinventing the same five
+        buttons in slightly incompatible ways, and a brand refresh meant a six-month parade of pull
+        requests across every consumer surface. The fix wasn't more components. The fix was changing
+        how we thought about color.
+      </p>
+
+      <p>
+        I championed a mindset shift across the org — from <strong>thinking in colors</strong>
+        ("this button is blue") to <strong>thinking in semantics</strong> ("this button uses
+        <code>--color-action-primary</code>"). It sounds small. It's the difference between a brand
+        refresh that takes six months and one that takes an afternoon. It's the difference between a
+        dark mode that ships as an invert and one that <em>re-derives</em> every surface from
+        semantic tokens. It's the difference between a design system you maintain and one that
+        maintains itself.
+      </p>
+
+      <p>
+        That thesis has shaped every design system I've touched since — LinkedIn's component
+        library, Superhuman.com from scratch, the Grammarly experiments.
+      </p>
+
+      <h2>Beliefs, opinion-strong</h2>
+
+      <ul>
+        {beliefs.map(b => <li set:html={b} />)}
+      </ul>
+
+      <h2>Timeline</h2>
+
+      <dl class="about__timeline">
+        {timeline.map(t => (
+          <>
+            <dt>{t.period}</dt>
+            <dd>{t.role}</dd>
+          </>
+        ))}
+      </dl>
+
+      <h2>Mentorship</h2>
+
+      <p>
+        Some of the most rewarding work I do is the work that compounds through other people. I've
+        mentored interns at LinkedIn who became full-time hires, and I'm currently working with two
+        apprentices on the path from junior to mid. Player-coach is the role I'm always growing
+        into.
+      </p>
+
+      <h2>AI tooling I ship</h2>
+
+      <p>
+        I also build small open-source tools that make designers + engineers faster. Most are MCP
+        servers + Claude skills — see <a href="/colophon#ai-powered-tooling">/colophon →
+        AI-powered tooling</a> for the index. The pattern: a problem I hit twice on a Tuesday
+        becomes an open-source package by Friday.
+      </p>
+    </Prose>
+  </main>
+</Base>
+
+<style>
+  .about {
+    padding: var(--space-8) var(--space-5) var(--space-10);
+  }
+
+  .about :global(.prose) :global(.about__lede) {
+    font-family: var(--font-display);
+    font-size: var(--type-28);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+    margin-block-end: var(--space-6);
+  }
+
+  .about :global(.prose) :global(.about__timeline) {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-5);
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+    margin-block: var(--space-4);
+  }
+
+  .about :global(.prose) :global(.about__timeline dt) {
+    color: var(--color-text-subtle);
+    text-transform: lowercase;
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .about :global(.prose) :global(.about__timeline dd) {
+    margin: 0;
+    color: var(--color-text-default);
+  }
+</style>

@@ -1,0 +1,301 @@
+---
+import Base from "~/layouts/Base.astro";
+import Prose from "~/components/Prose.astro";
+---
+
+<Base
+  title="Colophon — Luis Torres"
+  description="Architecture decisions and rationale — every load-bearing call that shaped this site, written down."
+  transitions={false}
+>
+  <main class="colophon">
+    <Prose>
+      <h1>Colophon</h1>
+
+      <p class="colophon__lede">
+        This is the architecture-decisions log. Every load-bearing choice that shaped the site,
+        with the rationale next to it. Read it the way you'd read a senior engineer's design doc —
+        the *why* is the interesting part.
+      </p>
+
+      <nav class="colophon__toc" aria-label="On this page">
+        <ol>
+          <li><a href="#why-this-site-exists">1. Why this site exists</a></li>
+          <li><a href="#stack">2. Stack</a></li>
+          <li><a href="#content-model">3. Content model</a></li>
+          <li><a href="#design-token-architecture">4. Design token architecture</a></li>
+          <li><a href="#color-modes">5. Color modes</a></li>
+          <li><a href="#accessibility-commitments">6. Accessibility commitments</a></li>
+          <li><a href="#performance-budgets">7. Performance budgets</a></li>
+          <li><a href="#localization-model">8. Localization model</a></li>
+          <li><a href="#ai-powered-tooling">9. AI-powered tooling</a></li>
+          <li><a href="#what-id-do-at-production-scale">10. What I'd do at production scale</a></li>
+          <li><a href="#colophon">11. Colophon (literal)</a></li>
+        </ol>
+      </nav>
+
+      <h2 id="why-this-site-exists">1. Why this site exists</h2>
+
+      <p>
+        A personal site for a design engineer should be the thing itself — every architectural
+        decision visible in the source, every interaction considered, every constraint named.
+        The brief I gave myself: build the site I'd want to read if I were trying to hire me.
+        That meant prose over portfolio bullets, opinions over feature lists, and a colophon
+        long enough to be load-bearing.
+      </p>
+
+      <h2 id="stack">2. Stack</h2>
+
+      <p>
+        <strong>Astro 5</strong>, TypeScript strict, MDX, sitemap, View Transitions. Static
+        output, zero JS by default — every interactive surface opts in as a vanilla TS island
+        with a measured budget. I picked Astro over Next.js deliberately: the site is content,
+        not application; islands beat hydration for surfaces this small; the "static-first,
+        opt-in dynamic" posture matches the way I think about most marketing sites. The cases
+        where I'd reach for Next.js — Server Actions, RSC streaming, middleware-heavy routing —
+        aren't in evidence here.
+      </p>
+
+      <p>
+        Package manager: <strong>pnpm</strong>, pinned via <code>packageManager</code> + Corepack.
+        Content-addressable store, strict peer-dep resolution, faster CI installs. Lockfile is
+        single source of truth.
+      </p>
+
+      <h2 id="content-model">3. Content model</h2>
+
+      <p>
+        Two content collections — <code>work</code> and <code>writing</code> — defined in
+        <code>src/content.config.ts</code> via Astro 5's <code>glob</code> loader. Frontmatter
+        is validated at build time by Zod, so a misshapen MDX file fails <code>astro build</code>
+        with a clear error rather than failing silently in a template at runtime. The shape:
+      </p>
+
+      <pre><code>{`const work = defineCollection({
+  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/work" }),
+  schema: ({ image }) =>
+    z.object({
+      title: z.string().min(1),
+      summary: z.string().min(1).max(280),
+      heroImage: image().optional(),
+      tags: z.array(z.string()).default([]),
+      date: z.coerce.date(),
+      featured: z.boolean().default(false),
+      role: z.string().optional(),
+      company: z.string().optional(),
+      period: z.string().optional(),
+    }),
+});`}</code></pre>
+
+      <p>
+        This is the headless-CMS-thinking artifact. The schema is the contract — anything that
+        consumes a case study (the index, the home page, OG generation, future search) reads
+        from the same types. Tomorrow's Payload / Sanity / Contentful migration is a loader
+        swap, not a rewrite.
+      </p>
+
+      <h2 id="design-token-architecture">4. Design token architecture</h2>
+
+      <p>
+        Three layers: <strong>primitives → semantic → component</strong>. Primitives are raw
+        hex (<code>--terracotta-60: #c2625e</code>), semantic tokens consume primitives via
+        <code>light-dark()</code> (<code>--color-action: var(--terracotta-60)</code>), components
+        consume semantic. There is no <code>--blue-</code> anywhere in the codebase — a button
+        doesn't ask for blue, it asks for "action." That's the "thinking in colors → thinking
+        in semantics" thesis, in code.
+      </p>
+
+      <p>
+        Cascade is layered <code>@layer reset, theme, base, components, atoms;</code> — same
+        dialect as my open-source <a href="https://github.com/semanticpixel/trellis">Trellis</a>
+        starter so the vocabulary reads across both codebases.
+      </p>
+
+      <h2 id="color-modes">5. Color modes</h2>
+
+      <p>
+        Three preferences, one token model:
+      </p>
+
+      <ul>
+        <li><code>prefers-color-scheme</code> — resolved via <code>light-dark()</code> on every
+        semantic token. No <code>[data-theme]</code> selectors duplicating values.</li>
+        <li><code>prefers-contrast: more</code> — tightens text/bg to near-black/white and
+        strengthens borders. Same tokens, different resolved values.</li>
+        <li><code>forced-colors: active</code> — hands control to the OS via system color
+        keywords (<code>Canvas</code>, <code>CanvasText</code>, <code>LinkText</code>,
+        <code>Highlight</code>). Tested under Windows High Contrast.</li>
+      </ul>
+
+      <p>
+        All three live in <code>src/styles/theme/semantic.css</code>. Adding a new surface
+        means writing one set of declarations; the four modes resolve automatically.
+      </p>
+
+      <h2 id="accessibility-commitments">6. Accessibility commitments</h2>
+
+      <ul>
+        <li>Keyboard reachable on every interactive surface. Visible <code>:focus-visible</code>
+        ring in <code>--color-focus</code>. No mouse-only affordances.</li>
+        <li>SVG content gets <code>role="img"</code> + descriptive <code>aria-label</code>.
+        Tooltips mirror into <code>aria-live="polite"</code> regions.</li>
+        <li>Every animation is gated on <code>prefers-reduced-motion: no-preference</code>,
+        and reduced-motion is the default in CI's Lighthouse runs.</li>
+        <li>Color contrast minimums met against both light and dark backgrounds (tested via
+        axe-core in CI when ST-8 lands).</li>
+        <li>Semantic HTML first: <code>&lt;nav&gt;</code>, <code>&lt;main&gt;</code>,
+        <code>&lt;article&gt;</code>, real <code>&lt;time datetime&gt;</code> elements, real
+        <code>&lt;button type&gt;</code> on every clickable.</li>
+      </ul>
+
+      <h2 id="performance-budgets">7. Performance budgets</h2>
+
+      <p>
+        Targets, enforced (or about to be — CI gate lands in ST-8):
+      </p>
+
+      <ul>
+        <li><strong>LCP</strong> &lt; 1.5s</li>
+        <li><strong>INP</strong> &lt; 100ms</li>
+        <li><strong>CLS</strong> &lt; 0.02</li>
+        <li><strong>Home JS</strong> &lt; 8 KB gzipped</li>
+        <li><strong>Home CSS</strong> &lt; 12 KB gzipped</li>
+      </ul>
+
+      <p>
+        Currently: home ships one external JS chunk (Astro's ClientRouter for View Transitions,
+        ~5.3 KB gz) plus small inline scripts (theme toggle, hero pulse). Fonts are self-hosted
+        woff2, subset to Latin + Latin-extended only — exactly six woff2 files in the bundle.
+      </p>
+
+      <h2 id="localization-model">8. Localization model</h2>
+
+      <p>
+        Astro's native i18n routing, English default + Spanish at <code>/es</code>. Content is
+        per-locale in sibling collections (<code>work</code> + <code>work-es</code>) — a Spanish
+        page is a real translation, not an injected dictionary lookup. Pages without a Spanish
+        version fall back to English behind a visible ribbon ("Esta página aún no está traducida
+        — mostrando la versión en inglés") so a reader is never silently served the wrong
+        language. The locale switcher preserves the current pathname across switches.
+      </p>
+
+      <p>
+        Spanish ships at launch as a craft demonstration, not as a market move — translating my
+        own work into my own heritage language is something I should be doing regardless.
+      </p>
+
+      <h2 id="ai-powered-tooling">9. AI-powered tooling</h2>
+
+      <p>
+        I ship small open-source tools — mostly MCP servers + Claude skills — that make
+        designers and engineers faster. The pattern: a problem I hit twice on a Tuesday becomes
+        an open-source package by Friday. The link-out index lives here.
+      </p>
+
+      <p>
+        <em>This section is intentionally minimal until I confirm with myself which repos
+        belong on the public list. The scaffold reads from a frontmatter-fed JSON; tomorrow's
+        commit replaces this paragraph with the rendered list, README excerpts pulled at
+        build time, install snippets where applicable.</em>
+      </p>
+
+      <h2 id="what-id-do-at-production-scale">10. What I'd do at production scale</h2>
+
+      <p>
+        Honest list of "this is a portfolio, here's how it would change for Anthropic-scale":
+      </p>
+
+      <ul>
+        <li><strong>Headless CMS</strong> — Payload or Sanity, with the Zod schemas mapped to
+        their type systems. Editorial workflow with preview environments, scheduled publishes,
+        author-driven revisions.</li>
+        <li><strong>Real observability</strong> — RUM (Real User Monitoring), error tracking,
+        a perf budget dashboard that fires alerts when LCP drifts. Sentry or Datadog.</li>
+        <li><strong>CDN strategy</strong> — edge caching with stale-while-revalidate, per-route
+        cache rules, signed URLs for previews.</li>
+        <li><strong>Internationalization vendor</strong> — TMS integration (Phrase, Lokalise) so
+        translators see strings in context, not in spreadsheets.</li>
+        <li><strong>Design-system release pipeline</strong> — semver, changelog, release notes
+        per package, codemods for breaking changes.</li>
+        <li><strong>A11y in CI as a hard gate</strong> — not just axe-core green, but
+        accessibility-tree diffs against a baseline, screen-reader walkthroughs scripted
+        with NVDA + VoiceOver in CI.</li>
+      </ul>
+
+      <h2 id="colophon">11. Colophon (literal)</h2>
+
+      <p>
+        Built in <a href="https://astro.build">Astro 5</a>. Type set in
+        <a href="https://fonts.google.com/specimen/Fraunces">Fraunces</a> (display) +
+        <a href="https://rsms.me/inter/">Inter</a> (body); numerals + metadata in
+        <a href="https://www.jetbrains.com/lp/mono/">JetBrains Mono</a>. Self-hosted, OFL.
+        Source on <a href="https://github.com/semanticpixel/theluistorres">GitHub</a> — MIT.
+        Deployed by GitHub Actions to GitHub Pages. Contribution-graph data syncs nightly
+        via a GraphQL workflow under <code>.github/workflows/sync-contributions.yml</code>.
+      </p>
+
+      <p class="colophon__refrain"><em>I learn every day.</em></p>
+    </Prose>
+  </main>
+</Base>
+
+<style>
+  .colophon {
+    padding: var(--space-8) var(--space-5) var(--space-10);
+  }
+
+  .colophon :global(.prose) :global(.colophon__lede) {
+    font-family: var(--font-display);
+    font-size: var(--type-21);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-muted);
+    margin-block-end: var(--space-7);
+  }
+
+  .colophon :global(.prose) :global(.colophon__toc) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-4) var(--space-5);
+    margin-block: var(--space-6);
+  }
+
+  .colophon :global(.prose) :global(.colophon__toc ol) {
+    columns: 2;
+    column-gap: var(--space-5);
+    margin: 0;
+    padding-inline-start: 1.4rem;
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+  }
+
+  .colophon :global(.prose) :global(.colophon__toc li) {
+    margin-block: var(--space-1);
+    break-inside: avoid;
+  }
+
+  .colophon :global(.prose) :global(.colophon__toc a) {
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+
+  .colophon :global(.prose) :global(.colophon__toc a:hover) {
+    color: var(--color-action);
+  }
+
+  .colophon :global(.prose) :global(.colophon__refrain) {
+    margin-block-start: var(--space-7);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  @media (max-width: 640px) {
+    .colophon :global(.prose) :global(.colophon__toc ol) {
+      columns: 1;
+    }
+  }
+</style>
