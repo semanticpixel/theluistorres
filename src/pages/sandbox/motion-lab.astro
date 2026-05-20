@@ -1,0 +1,217 @@
+---
+import Base from "~/layouts/Base.astro";
+
+const eases = [
+  { name: "ease-out-expo",  curve: "cubic-bezier(0.16, 1, 0.3, 1)" },
+  { name: "ease-out-quart", curve: "cubic-bezier(0.25, 1, 0.5, 1)" },
+  { name: "ease-in-out",    curve: "cubic-bezier(0.65, 0, 0.35, 1)" },
+  { name: "linear",         curve: "linear" },
+] as const;
+
+const durations = [
+  { name: "fast",    ms: 120 },
+  { name: "base",    ms: 220 },
+  { name: "slow",    ms: 480 },
+  { name: "ambient", ms: 1200 },
+] as const;
+---
+
+<Base title="Motion lab — Sandbox" description="A side-by-side preview of the four ease curves against the four duration tokens." transitions={false}>
+  <main class="lab">
+    <header class="lab__head">
+      <p class="lab__eyebrow"><a href="/sandbox">sandbox</a> / motion-lab</p>
+      <h1 class="lab__title">Motion lab</h1>
+      <p class="lab__lede">
+        Each cell holds a dot that runs the same animation: travel 100% of its row at the
+        named ease × duration. Click anywhere on a row to restart all four eases at that
+        duration in lockstep — the difference reads in the trailing 20%.
+      </p>
+    </header>
+
+    <table class="grid">
+      <thead>
+        <tr>
+          <th scope="col">ease ↓ &nbsp;duration →</th>
+          {durations.map(d => <th scope="col">{d.name} <span class="grid__sub">{d.ms}ms</span></th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {eases.map(ease => (
+          <tr>
+            <th scope="row">
+              <span class="grid__name">{ease.name}</span>
+              <code class="grid__curve">{ease.curve}</code>
+            </th>
+            {durations.map(d => (
+              <td>
+                <button
+                  class="cell"
+                  type="button"
+                  data-cell
+                  style={`--curve: ${ease.curve}; --dur: ${d.ms}ms;`}
+                  aria-label={`${ease.name} at ${d.ms}ms — click to run`}
+                >
+                  <span class="cell__track" aria-hidden="true">
+                    <span class="cell__dot"></span>
+                  </span>
+                </button>
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <p class="lab__hint">tap any cell — or any row label — to re-run.</p>
+  </main>
+</Base>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-cell]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      btn.classList.remove("is-running");
+      void btn.offsetWidth; /* force reflow */
+      btn.classList.add("is-running");
+    });
+  });
+
+  document.querySelectorAll<HTMLTableRowElement>("tbody tr").forEach(row => {
+    const th = row.querySelector("th");
+    th?.addEventListener("click", () => {
+      row.querySelectorAll<HTMLElement>("[data-cell]").forEach(btn => {
+        btn.classList.remove("is-running");
+        void btn.offsetWidth;
+        btn.classList.add("is-running");
+      });
+    });
+  });
+
+  /* Auto-run once on mount so the page reads as "alive" without interaction. */
+  document.querySelectorAll<HTMLElement>("[data-cell]").forEach((btn, i) => {
+    setTimeout(() => btn.classList.add("is-running"), 200 + i * 40);
+  });
+</script>
+
+<style>
+  .lab {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-7) var(--space-5) var(--space-9);
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .lab__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+    max-width: 60ch;
+  }
+
+  .lab__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .lab__eyebrow a { color: inherit; text-decoration: none; }
+  .lab__eyebrow a:hover { color: var(--color-action); }
+
+  .lab__title {
+    font-family: var(--font-display);
+    font-size: var(--type-40);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .lab__lede {
+    color: var(--color-text-muted);
+  }
+
+  .grid {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .grid th,
+  .grid td {
+    padding: var(--space-2) var(--space-3);
+    border-block-end: 1px solid var(--color-border);
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    vertical-align: middle;
+    color: var(--color-text-default);
+  }
+
+  .grid thead th {
+    color: var(--color-text-subtle);
+    text-transform: lowercase;
+  }
+
+  .grid__sub {
+    color: var(--color-text-subtle);
+    font-size: 0.85em;
+  }
+
+  .grid__name {
+    display: block;
+    color: var(--color-text-default);
+  }
+
+  .grid__curve {
+    display: block;
+    color: var(--color-text-subtle);
+    font-size: 10px;
+  }
+
+  .cell {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    width: 100%;
+    cursor: pointer;
+  }
+
+  .cell__track {
+    display: block;
+    position: relative;
+    block-size: 18px;
+    background: var(--color-surface);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+
+  .cell__dot {
+    position: absolute;
+    inset: 4px auto 4px 4px;
+    aspect-ratio: 1;
+    background: var(--color-action);
+    border-radius: var(--radius-pill);
+    translate: 0 0;
+  }
+
+  .cell.is-running .cell__dot {
+    animation: cell-travel var(--dur) var(--curve) forwards;
+  }
+
+  @keyframes cell-travel {
+    from { translate: 0 0; }
+    to   { translate: calc(100% + 4rem) 0; }
+  }
+
+  .lab__hint {
+    color: var(--color-text-subtle);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cell.is-running .cell__dot { animation: none; translate: calc(100% + 4rem) 0; }
+  }
+</style>

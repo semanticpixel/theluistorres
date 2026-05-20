@@ -1,0 +1,93 @@
+---
+import Base from "~/layouts/Base.astro";
+---
+
+<Base title="404 — page not found" description="Page not found. But the CSS is still awesome." transitions={false}>
+  <main class="four-oh-four">
+    <!--
+      "CSS Is Awesome" meme, done right.
+      The container is intentionally container-typed (`container-type: inline-size`)
+      so the text reflows responsively instead of overflowing — the original
+      screenshot's broken visual joke, but fixed.
+    -->
+    <div class="awesome">
+      <div class="awesome__box">
+        <p class="awesome__text">CSS Is Awesome</p>
+      </div>
+    </div>
+
+    <p class="four-oh-four__caption">
+      page not found. but the CSS is still awesome.
+    </p>
+
+    <p class="four-oh-four__home">
+      <a href="/">← go home</a>
+    </p>
+  </main>
+</Base>
+
+<style>
+  .four-oh-four {
+    min-block-size: 80svh;
+    display: grid;
+    align-content: center;
+    gap: var(--space-5);
+    padding: var(--space-7) var(--space-5);
+    max-width: var(--container-prose);
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  /* The meme container. Intentionally narrow on the page so the
+     joke (text fitting cleanly inside) reads — but also intentionally
+     container-typed so the resize behaviour can be inspected at any
+     width without overflowing. */
+  .awesome {
+    container-type: inline-size;
+    inline-size: clamp(14rem, 60cqi, 28rem);
+    margin-inline: auto;
+  }
+
+  .awesome__box {
+    border: 2px solid var(--color-text-default);
+    padding: var(--space-5);
+    background: var(--color-bg);
+  }
+
+  .awesome__text {
+    /* The fix: size grows with the container, not the viewport.
+       Wraps onto multiple lines when the container shrinks rather than
+       slicing out of bounds. */
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2rem, 22cqi, 5rem);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+    margin: 0;
+    /* Allow long words to break rather than overflow on extreme sizes. */
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  .four-oh-four__caption {
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .four-oh-four__home a {
+    color: var(--color-action);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    text-decoration: none;
+  }
+
+  .four-oh-four__home a:hover,
+  .four-oh-four__home a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+</style>

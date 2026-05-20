@@ -1,0 +1,137 @@
+---
+import Base from "~/layouts/Base.astro";
+
+const sketches = [
+  {
+    slug: "token-scale",
+    title: "Token-scale visualizer",
+    summary: "A small chart that renders the five primitive color scales as lightness ramps and lets you eyeball perceptual spacing in light/dark/contrast modes.",
+    tags: ["data-vis", "tokens"],
+  },
+  {
+    slug: "motion-lab",
+    title: "Motion lab",
+    summary: "Side-by-side preview of the four ease curves against the four duration tokens — pick a target, see the actual cubic-bezier trace and the timing.",
+    tags: ["motion", "tokens"],
+  },
+];
+---
+
+<Base title="Sandbox — Luis Torres" description="Small experiments that didn't earn a case study but earned a slot.">
+  <main class="sandbox">
+    <header class="sandbox__head">
+      <p class="sandbox__eyebrow">sandbox</p>
+      <h1 class="sandbox__title">Quick sketches</h1>
+      <p class="sandbox__lede">
+        Experiments. Small interactive pieces that taught me something — not big enough to be case
+        studies, too small to throw away. Each is single-file and reads as the source it ships from.
+      </p>
+    </header>
+
+    <ul class="sandbox__list" role="list">
+      {sketches.map(sketch => (
+        <li>
+          <a class="sandbox__item" href={`/sandbox/${sketch.slug}`}>
+            <h2 class="sandbox__item-title">{sketch.title}</h2>
+            <p class="sandbox__item-summary">{sketch.summary}</p>
+            <ul class="sandbox__tags" role="list">
+              {sketch.tags.map(tag => <li class="sandbox__tag">#{tag}</li>)}
+            </ul>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </main>
+</Base>
+
+<style>
+  .sandbox {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-8) var(--space-5) var(--space-10);
+    display: grid;
+    gap: var(--space-8);
+  }
+
+  .sandbox__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+    max-width: 56ch;
+  }
+
+  .sandbox__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+
+  .sandbox__title {
+    font-family: var(--font-display);
+    font-size: var(--type-64);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .sandbox__lede {
+    color: var(--color-text-muted);
+  }
+
+  .sandbox__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--space-5);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sandbox__item {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .sandbox__item:hover,
+  .sandbox__item:focus-visible {
+    border-color: var(--color-border-strong);
+  }
+
+  .sandbox__item-title {
+    font-family: var(--font-display);
+    font-size: var(--type-28);
+    line-height: var(--line-snug);
+    letter-spacing: var(--tracking-tight);
+    color: var(--color-text-default);
+    margin: 0;
+  }
+
+  .sandbox__item-summary {
+    color: var(--color-text-muted);
+    margin: 0;
+  }
+
+  .sandbox__tags {
+    display: flex;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .sandbox__tag {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    letter-spacing: var(--tracking-wide);
+  }
+</style>
