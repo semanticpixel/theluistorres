@@ -1,0 +1,147 @@
+---
+/*
+ * Static SVG contribution grid — hero background.
+ *
+ * Reads `public/data/contributions.json` at build time (produced by the
+ * scheduled `sync-contributions.yml` workflow + `scripts/fetch-contributions.mjs`).
+ * If the file isn't present yet (first-time build before the workflow has
+ * ever run), gracefully renders an empty grid — all cells at level 0.
+ *
+ * Renders zero client JS. The interactive grid that mounts on scroll lives
+ * in `ContributionsInteractive.astro` and is a separate island.
+ *
+ * Visual params per PLAN.md §7:
+ *   - ~18% opacity (a whisper, not subject)
+ *   - feathered radial mask, anchored bottom-right
+ *   - terracotta scale (replaces the POC's teal)
+ */
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+interface Day {
+  date: string;
+  count: number;
+  level: number;
+}
+interface Snapshot {
+  lastUpdated: string;
+  meta: {
+    totalContributions: number;
+    streak: number;
+    todayCount: number;
+    range: { from: string; to: string };
+    sources: string[];
+  };
+  contributions: Day[];
+}
+
+function emptyDays(): Day[] {
+  const out: Day[] = [];
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(end);
+    d.setUTCDate(d.getUTCDate() - i);
+    out.push({ date: d.toISOString().slice(0, 10), count: 0, level: 0 });
+  }
+  return out;
+}
+
+let snapshot: Snapshot | null = null;
+try {
+  const raw = readFileSync(resolve(process.cwd(), "public/data/contributions.json"), "utf8");
+  snapshot = JSON.parse(raw);
+} catch (err) {
+  /* No JSON yet — workflow hasn't run, or PR is pre-secret-set. Render empty. */
+  snapshot = null;
+}
+
+const days = snapshot?.contributions ?? emptyDays();
+const total = snapshot?.meta.totalContributions ?? 0;
+const streak = snapshot?.meta.streak ?? 0;
+const todayCount = snapshot?.meta.todayCount ?? 0;
+const lastUpdated = snapshot?.lastUpdated;
+
+/*
+ * Lay the days out in columns (weeks). Each column has 7 cells (Sun..Sat).
+ * Pad the first week so the column boundary aligns with the actual weekday
+ * of the first day in the range — keeps the grid in register with GitHub's.
+ */
+const firstDow = new Date(days[0].date + "T00:00:00Z").getUTCDay();
+const padded: (Day | null)[] = Array(firstDow).fill(null).concat(days as (Day | null)[]);
+while (padded.length % 7 !== 0) padded.push(null);
+
+const weeks: (Day | null)[][] = [];
+for (let i = 0; i < padded.length; i += 7) {
+  weeks.push(padded.slice(i, i + 7));
+}
+
+const CELL = 11;
+const GAP = 2;
+const STRIDE = CELL + GAP;
+const W = weeks.length * STRIDE;
+const H = 7 * STRIDE;
+
+const ariaLabel = snapshot
+  ? `Contribution graph: ${total} contributions over the last year, current streak ${streak} days.`
+  : `Contribution graph: pending first sync.`;
+---
+
+<svg
+  class="contributions"
+  viewBox={`0 0 ${W} ${H}`}
+  preserveAspectRatio="xMaxYMax meet"
+  role="img"
+  aria-label={ariaLabel}
+  data-contributions
+  data-total={total}
+  data-streak={streak}
+  data-today-count={todayCount}
+  data-last-updated={lastUpdated}
+>
+  <defs>
+    <radialGradient id="contributions-mask" cx="100%" cy="100%" r="120%">
+      <stop offset="0%"  stop-color="white" stop-opacity="1" />
+      <stop offset="60%" stop-color="white" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="white" stop-opacity="0" />
+    </radialGradient>
+    <mask id="contributions-fade">
+      <rect width={W} height={H} fill="url(#contributions-mask)" />
+    </mask>
+  </defs>
+
+  <g mask="url(#contributions-fade)">
+    {weeks.map((week, wi) => (
+      week.map((day, di) => day && (
+        <rect
+          x={wi * STRIDE}
+          y={di * STRIDE}
+          width={CELL}
+          height={CELL}
+          rx={2}
+          ry={2}
+          data-date={day.date}
+          data-level={day.level}
+        />
+      ))
+    ))}
+  </g>
+</svg>
+
+<style>
+  .contributions {
+    inline-size: 100%;
+    block-size: 100%;
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  /* Terracotta scale (replaces the POC's teal). Same tokens semantic.css
+     reads, so the graph reads as the brand in both light and dark schemes. */
+  .contributions rect[data-level="0"] { fill: var(--color-surface); }
+  .contributions rect[data-level="1"] { fill: var(--terracotta-20); }
+  .contributions rect[data-level="2"] { fill: var(--terracotta-40); }
+  .contributions rect[data-level="3"] { fill: var(--terracotta-60); }
+  .contributions rect[data-level="4"] { fill: var(--terracotta-80); }
+</style>

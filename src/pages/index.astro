@@ -2,7 +2,11 @@
 import Base from "~/layouts/Base.astro";
 import HeroName from "~/components/HeroName.astro";
 import WorkCard from "~/components/WorkCard.astro";
+import Contributions from "~/components/Contributions.astro";
+import ContributionsInteractive from "~/components/ContributionsInteractive.astro";
 import { getCollection } from "astro:content";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 /*
  * Featured work — limited to 3 entries marked `featured: true` in the
@@ -14,17 +18,34 @@ import { getCollection } from "astro:content";
 const featured = (await getCollection("work", entry => entry.data.featured && !entry.data.draft))
   .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
   .slice(0, 3);
+
+/*
+ * Build-time read of the contributions snapshot so the mono stat-line can
+ * render the real numbers. Falls back to placeholder text when the JSON
+ * doesn't exist yet (pre-first-sync).
+ */
+interface Snapshot {
+  lastUpdated: string;
+  meta: { totalContributions: number; streak: number; todayCount: number };
+}
+let stats: Snapshot["meta"] | null = null;
+let synced: string | null = null;
+try {
+  const raw = readFileSync(resolve(process.cwd(), "public/data/contributions.json"), "utf8");
+  const snapshot: Snapshot = JSON.parse(raw);
+  stats = snapshot.meta;
+  synced = new Date(snapshot.lastUpdated).toISOString().slice(0, 10);
+} catch (_) {
+  /* pending first sync */
+}
 ---
 
 <Base title="Luis Torres" description="Design engineer building for the web.">
   <main class="home">
     <section class="hero">
-      <!--
-        Contribution graph background. ST-3 fills this slot with a build-time
-        static SVG of the merged GitHub contribution calendar — feathered
-        radial mask, ~18% opacity, anchored bottom-right.
-      -->
-      <div class="hero__graph" aria-hidden="true" data-graph-slot></div>
+      <div class="hero__graph" aria-hidden="true">
+        <Contributions />
+      </div>
 
       <div class="hero__type">
         <HeroName name="Luis Torres" />
@@ -32,10 +53,18 @@ const featured = (await getCollection("work", entry => entry.data.featured && !e
         <p class="hero__bio">Currently @ Superhuman. Previously LinkedIn, Amazon.</p>
         <p class="hero__stat">
           <span class="hero__stat-rule" aria-hidden="true">────</span>
-          <span class="hero__stat-text">graph syncing soon · interactive grid mounts on scroll</span>
+          {stats ? (
+            <span class="hero__stat-text">
+              {stats.totalContributions.toLocaleString()} contributions · {stats.streak} streak · synced {synced}
+            </span>
+          ) : (
+            <span class="hero__stat-text">graph syncing soon · interactive grid mounts on scroll</span>
+          )}
         </p>
       </div>
     </section>
+
+    <ContributionsInteractive />
 
     {featured.length > 0 && (
       <section class="home__work" aria-labelledby="featured-work-heading">
@@ -73,11 +102,15 @@ const featured = (await getCollection("work", entry => entry.data.featured && !e
   }
 
   .hero__graph {
-    /* Anchored bottom-right slot reserved for ST-3's contribution-grid SVG. */
+    /* Anchored bottom-right, full hero bounds, behind the type layer. */
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: -1;
+    display: flex;
+    align-items: end;
+    justify-content: end;
+    overflow: hidden;
   }
 
   .hero__type {
@@ -138,7 +171,7 @@ const featured = (await getCollection("work", entry => entry.data.featured && !e
     }
   }
 
-  /* "Recent work" — 3 featured cards below the hero. */
+  /* "Recent work" — 3 featured cards below the interactive contribution grid. */
   .home__eyebrow {
     font-family: var(--font-mono);
     font-size: var(--type-12);
