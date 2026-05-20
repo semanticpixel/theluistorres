@@ -1,5 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
+import Nav from "~/components/Nav.astro";
+import Footer from "~/components/Footer.astro";
 import "~/styles/index.css";
 
 interface Props {
@@ -11,9 +13,19 @@ interface Props {
    * /theme, /404) opt out.
    */
   transitions?: boolean;
+  /*
+   * Render the site chrome (Nav + Footer). Default-on; preview pages like
+   * /theme set this false to render the content in isolation.
+   */
+  chrome?: boolean;
 }
 
-const { title, description = "Luis Torres — design engineer.", transitions = true } = Astro.props;
+const {
+  title,
+  description = "Luis Torres — design engineer.",
+  transitions = true,
+  chrome = true,
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 ---
 
@@ -48,6 +60,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
     {transitions && <ClientRouter />}
   </head>
   <body>
+    {chrome && <Nav />}
     <slot />
+    {chrome && <Footer />}
   </body>
 </html>

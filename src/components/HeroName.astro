@@ -1,0 +1,117 @@
+---
+/*
+ * Hero name with chromatic-split treatment + ambient pulse.
+ *
+ * Three stacked spans in one grid cell; layers 1 and 2 are decorative
+ * offsets (aria-hidden), layer 3 is the AT-readable name. The CSS uses
+ * `@property --split` so the offset interpolates smoothly via the L2
+ * `translate` property — composable with rotate/scale, no shorthand fight.
+ *
+ * Pulse scheduler is a vanilla TS script (~0.4 KB min) — truncated
+ * exponential delay (mean ~70s, min 20s, occasional longer pauses);
+ * pauses when the tab is backgrounded; collapses to a single static
+ * layer under `prefers-reduced-motion: reduce`.
+ *
+ * Hover/focus-within is a deliberate trigger, slightly subtler than the
+ * ambient pulse so it reads as different intent.
+ */
+
+interface Props {
+  name: string;
+}
+
+const { name } = Astro.props;
+---
+
+<h1 class="hero-name">
+  <span style="--index: 1" aria-hidden="true">{name}</span>
+  <span style="--index: 2" aria-hidden="true">{name}</span>
+  <span style="--index: 3">{name}</span>
+</h1>
+
+<script>
+  const el = document.querySelector<HTMLElement>(".hero-name");
+  if (el && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    /* Truncated exponential — mean ~70s, occasional longer pauses, min 20s */
+    const nextDelay = () => 20_000 + -Math.log(1 - Math.random()) * 50_000;
+
+    let timer = 0;
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = window.setTimeout(pulse, nextDelay());
+    };
+    function pulse() {
+      if (document.hidden) return schedule();
+      el!.classList.add("is-pulsing");
+      window.setTimeout(() => el!.classList.remove("is-pulsing"), 480);
+      schedule();
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) schedule();
+    });
+    schedule();
+  }
+</script>
+
+<style>
+  /* Typed custom prop — smooth interpolation through the L2 translate property. */
+  @property --split {
+    syntax: "<length>";
+    inherits: true;
+    initial-value: 0px;
+  }
+
+  .hero-name {
+    display: grid;
+    isolation: isolate;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--type-96);
+    font-weight: 300;
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+    --split: 0px;
+    /* The variable font's optical size axis is on by default at this size,
+       but pin it explicitly so adjacent text doesn't drift. */
+    font-variation-settings: "opsz" 144;
+  }
+
+  .hero-name > * {
+    grid-area: 1 / 1;
+    place-self: center start;
+    /* L2 translate — composes independently of any future rotate/scale. */
+    translate: calc((var(--index) - 2) * var(--split)) 0;
+    transition: translate var(--duration-slow) var(--ease-out-expo);
+  }
+
+  /* :nth-child base layer — works everywhere. Multiplying terracotta + slate
+     onto the bone surface gives the small chromatic fringe; in dark mode
+     screening the inverted scale reproduces the same fringe direction. */
+  .hero-name > *:nth-child(1) { color: light-dark(var(--terracotta-60), var(--terracotta-40)); }
+  .hero-name > *:nth-child(2) { color: light-dark(var(--slate-80),      var(--slate-40)); }
+  .hero-name > *:nth-child(3) { color: light-dark(var(--bone-80),       var(--bone-40)); }
+
+  .hero-name > * {
+    mix-blend-mode: light-dark(multiply, screen);
+  }
+
+  /* Ambient pulse — set by the JS scheduler. */
+  .hero-name.is-pulsing { --split: 0.6rem; }
+
+  /* Hover/focus-within — deliberate trigger, subtler than ambient pulse. */
+  .hero-name:hover,
+  .hero-name:focus-within { --split: 0.35rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-name,
+    .hero-name > * {
+      transition: none;
+      --split: 0px;
+    }
+    .hero-name > *[aria-hidden="true"] { display: none; }
+    .hero-name > *:not([aria-hidden]) {
+      color: var(--color-text-default);
+      mix-blend-mode: normal;
+    }
+  }
+</style>

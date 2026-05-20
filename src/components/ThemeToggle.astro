@@ -1,0 +1,107 @@
+---
+/*
+ * ThemeToggle — vanilla TS island.
+ *
+ * Pre-paint resolution lives in Base.astro's inline <head> script so the
+ * first frame already reflects the stored preference. This component only
+ * handles user interaction: toggle [data-theme] on <html>, persist to
+ * localStorage. The button itself is just three states (auto · light · dark)
+ * cycling on each click.
+ */
+---
+
+<button class="theme-toggle" type="button" aria-label="toggle theme" data-theme-toggle>
+  <span class="theme-toggle__icon theme-toggle__icon--auto" aria-hidden="true">◐</span>
+  <span class="theme-toggle__icon theme-toggle__icon--light" aria-hidden="true">○</span>
+  <span class="theme-toggle__icon theme-toggle__icon--dark" aria-hidden="true">●</span>
+  <span class="theme-toggle__label" data-theme-label>auto</span>
+</button>
+
+<script>
+  /*
+   * State: "auto" (no override — follow system), "light", "dark".
+   * Storage key is "theme" — matches the pre-paint script in Base.astro.
+   */
+  type ThemeChoice = "auto" | "light" | "dark";
+
+  const KEY = "theme";
+  const ORDER: ThemeChoice[] = ["auto", "light", "dark"];
+
+  const root = document.documentElement;
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  const label = document.querySelector<HTMLElement>("[data-theme-label]");
+
+  function read(): ThemeChoice {
+    try {
+      const v = localStorage.getItem(KEY);
+      if (v === "light" || v === "dark") return v;
+    } catch (_) {
+      /* private mode etc. */
+    }
+    return "auto";
+  }
+
+  function apply(choice: ThemeChoice) {
+    if (choice === "auto") {
+      delete root.dataset.theme;
+      try { localStorage.removeItem(KEY); } catch (_) {}
+    } else {
+      root.dataset.theme = choice;
+      try { localStorage.setItem(KEY, choice); } catch (_) {}
+    }
+    if (label) label.textContent = choice;
+    button?.setAttribute("data-current", choice);
+  }
+
+  apply(read());
+
+  button?.addEventListener("click", () => {
+    const current = read();
+    const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
+    apply(next);
+  });
+</script>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    text-transform: lowercase;
+    transition:
+      color var(--duration-base) var(--ease-out-expo),
+      border-color var(--duration-base) var(--ease-out-expo);
+  }
+
+  .theme-toggle:hover,
+  .theme-toggle:focus-visible {
+    color: var(--color-text-default);
+    border-color: var(--color-border-strong);
+  }
+
+  .theme-toggle__icon {
+    display: none;
+    font-size: 0.85em;
+    line-height: 1;
+  }
+
+  .theme-toggle[data-current="auto"] .theme-toggle__icon--auto,
+  .theme-toggle[data-current="light"] .theme-toggle__icon--light,
+  .theme-toggle[data-current="dark"] .theme-toggle__icon--dark {
+    display: inline;
+  }
+
+  /* When no data-current yet (pre-hydration), show the auto glyph */
+  .theme-toggle:not([data-current]) .theme-toggle__icon--auto {
+    display: inline;
+  }
+</style>
