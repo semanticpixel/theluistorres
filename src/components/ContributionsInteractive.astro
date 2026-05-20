@@ -1,0 +1,307 @@
+---
+/*
+ * The second-moment interactive contribution grid.
+ *
+ * Same data as `Contributions.astro` (the hero background) but rendered at
+ * full opacity, full fidelity, with proximity glow and tooltips. Mounts via
+ * IntersectionObserver — the script body only runs after the section enters
+ * the viewport, so home-page first-paint pays nothing for it.
+ *
+ * Today-cell gets an ambient pulse loop (1.2s, `--ease-in-out`), gated on
+ * `prefers-reduced-motion: no-preference`.
+ *
+ * Renders the same DOM at build time so non-JS clients still see the grid;
+ * the script only adds interactivity.
+ */
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+interface Day {
+  date: string;
+  count: number;
+  level: number;
+}
+interface Snapshot {
+  lastUpdated: string;
+  meta: {
+    totalContributions: number;
+    streak: number;
+    todayCount: number;
+    range: { from: string; to: string };
+    sources: string[];
+  };
+  contributions: Day[];
+}
+
+function emptyDays(): Day[] {
+  const out: Day[] = [];
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(end);
+    d.setUTCDate(d.getUTCDate() - i);
+    out.push({ date: d.toISOString().slice(0, 10), count: 0, level: 0 });
+  }
+  return out;
+}
+
+let snapshot: Snapshot | null = null;
+try {
+  const raw = readFileSync(resolve(process.cwd(), "public/data/contributions.json"), "utf8");
+  snapshot = JSON.parse(raw);
+} catch (_) {
+  snapshot = null;
+}
+
+const days = snapshot?.contributions ?? emptyDays();
+const total = snapshot?.meta.totalContributions ?? 0;
+const streak = snapshot?.meta.streak ?? 0;
+const lastUpdated = snapshot?.lastUpdated;
+const todayDate = days[days.length - 1]?.date;
+
+const firstDow = new Date(days[0].date + "T00:00:00Z").getUTCDay();
+const padded: (Day | null)[] = Array(firstDow).fill(null).concat(days as (Day | null)[]);
+while (padded.length % 7 !== 0) padded.push(null);
+const weeks: (Day | null)[][] = [];
+for (let i = 0; i < padded.length; i += 7) weeks.push(padded.slice(i, i + 7));
+
+const CELL = 14;
+const GAP = 3;
+const STRIDE = CELL + GAP;
+const W = weeks.length * STRIDE;
+const H = 7 * STRIDE;
+---
+
+<section class="contrib" aria-labelledby="contrib-heading">
+  <header class="contrib__head">
+    <h2 id="contrib-heading" class="contrib__title">every cell is a day. hover to see what.</h2>
+    <dl class="contrib__meta">
+      <dt>total</dt>
+      <dd>{total.toLocaleString()}</dd>
+      <dt>streak</dt>
+      <dd>{streak} days</dd>
+      <dt>synced</dt>
+      <dd>{lastUpdated ? new Date(lastUpdated).toISOString().slice(0, 10) : "pending"}</dd>
+    </dl>
+  </header>
+
+  <div class="contrib__grid-wrap" data-contrib-grid>
+    <svg
+      class="contrib__grid"
+      viewBox={`0 0 ${W} ${H}`}
+      role="img"
+      aria-labelledby="contrib-heading"
+    >
+      {weeks.map((week, wi) =>
+        week.map((day, di) => day && (
+          <rect
+            x={wi * STRIDE}
+            y={di * STRIDE}
+            width={CELL}
+            height={CELL}
+            rx={3}
+            ry={3}
+            data-date={day.date}
+            data-count={day.count}
+            data-level={day.level}
+            class:list={[day.date === todayDate && "is-today"]}
+          />
+        )),
+      )}
+    </svg>
+    <div class="contrib__tooltip" role="tooltip" data-contrib-tooltip aria-hidden="true"></div>
+    <div class="visually-hidden" aria-live="polite" data-contrib-live></div>
+  </div>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>("[data-contrib-grid]");
+  if (root) {
+    const cells = root.querySelectorAll<SVGRectElement>("rect[data-date]");
+    const tooltip = root.querySelector<HTMLElement>("[data-contrib-tooltip]");
+    const live = root.querySelector<HTMLElement>("[data-contrib-live]");
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* Lazy activation — only wire up interaction after the section is on screen. */
+    const io = new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (e.isIntersecting) {
+          root.classList.add("is-active");
+          io.disconnect();
+        }
+      }
+    });
+    io.observe(root);
+
+    function show(cell: SVGRectElement, x: number, y: number) {
+      if (!tooltip) return;
+      const date = cell.getAttribute("data-date") ?? "";
+      const count = Number(cell.getAttribute("data-count") ?? 0);
+      tooltip.textContent = `${date} · ${count} ${count === 1 ? "contribution" : "contributions"}`;
+      tooltip.style.transform = `translate(${x}px, ${y}px)`;
+      tooltip.setAttribute("aria-hidden", "false");
+      if (live) live.textContent = tooltip.textContent;
+    }
+    function hide() {
+      tooltip?.setAttribute("aria-hidden", "true");
+    }
+
+    cells.forEach(cell => {
+      cell.addEventListener("mouseenter", e => {
+        const r = (e.currentTarget as SVGRectElement).getBoundingClientRect();
+        const rootR = root.getBoundingClientRect();
+        show(cell, r.right - rootR.left + 8, r.top - rootR.top);
+      });
+      cell.addEventListener("mouseleave", hide);
+      cell.addEventListener("focus", e => {
+        const r = (e.currentTarget as SVGRectElement).getBoundingClientRect();
+        const rootR = root.getBoundingClientRect();
+        show(cell, r.right - rootR.left + 8, r.top - rootR.top);
+      });
+      cell.addEventListener("blur", hide);
+      cell.setAttribute("tabindex", "-1");
+    });
+
+    /* Today-cell ambient pulse — runs only after the section is visible and only
+       if the user hasn't asked for reduced motion. */
+    if (!reduce) {
+      const today = root.querySelector<SVGRectElement>(".is-today");
+      if (today) {
+        const pulse = () => {
+          if (document.hidden) return;
+          today.classList.add("is-pulsing");
+          setTimeout(() => today.classList.remove("is-pulsing"), 1200);
+        };
+        const interval = window.setInterval(pulse, 6000);
+        document.addEventListener("visibilitychange", () => {
+          /* No need to do anything — the next interval tick will pick up when not hidden. */
+          if (!document.hidden) pulse();
+        });
+        /* First pulse after a short delay so it doesn't fight entrance animations. */
+        setTimeout(pulse, 1500);
+        /* Tear down on page unload to avoid leaking the interval across SPA-style nav. */
+        document.addEventListener("astro:before-swap", () => clearInterval(interval), { once: true });
+      }
+    }
+  }
+</script>
+
+<style>
+  .contrib {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-8) var(--space-5);
+    max-width: var(--container-wide);
+    margin-inline: auto;
+  }
+
+  .contrib__head {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .contrib__title {
+    font-family: var(--font-display);
+    font-size: var(--type-21);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-tight);
+    max-width: 38ch;
+  }
+
+  .contrib__meta {
+    display: flex;
+    gap: var(--space-5);
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-subtle);
+    margin: 0;
+  }
+
+  .contrib__meta dt {
+    display: inline;
+    text-transform: lowercase;
+  }
+  .contrib__meta dt::after { content: " "; }
+  .contrib__meta dd {
+    display: inline;
+    margin: 0;
+    color: var(--color-text-default);
+  }
+  .contrib__meta dt:not(:first-child) { margin-inline-start: var(--space-5); }
+
+  .contrib__grid-wrap {
+    position: relative;
+    overflow-x: auto;
+  }
+
+  .contrib__grid {
+    display: block;
+    inline-size: 100%;
+    min-inline-size: 720px;
+  }
+
+  /* Same terracotta scale as the hero background, full opacity here. */
+  .contrib__grid rect[data-level="0"] { fill: var(--color-surface); }
+  .contrib__grid rect[data-level="1"] { fill: var(--terracotta-20); }
+  .contrib__grid rect[data-level="2"] { fill: var(--terracotta-40); }
+  .contrib__grid rect[data-level="3"] { fill: var(--terracotta-60); }
+  .contrib__grid rect[data-level="4"] { fill: var(--terracotta-80); }
+
+  .contrib.is-active .contrib__grid rect {
+    transition: filter var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .contrib__grid rect:hover,
+  .contrib__grid rect:focus {
+    filter: drop-shadow(0 0 6px color-mix(in oklab, var(--color-action) 70%, transparent));
+    outline: none;
+  }
+
+  /* Today-cell ambient pulse. */
+  @media (prefers-reduced-motion: no-preference) {
+    .contrib__grid rect.is-today.is-pulsing {
+      animation: today-pulse var(--duration-ambient) var(--ease-in-out);
+    }
+  }
+
+  @keyframes today-pulse {
+    0%   { filter: drop-shadow(0 0 0 transparent); }
+    50%  { filter: drop-shadow(0 0 8px var(--terracotta-40)); }
+    100% { filter: drop-shadow(0 0 0 transparent); }
+  }
+
+  .contrib__tooltip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    background: var(--color-text-default);
+    color: var(--color-bg);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out-quart);
+    z-index: 2;
+  }
+
+  .contrib__tooltip[aria-hidden="false"] { opacity: 1; }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>

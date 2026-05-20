@@ -1,0 +1,50 @@
+name: Sync GitHub contributions
+
+# Nightly run + manual trigger. Cron is 08:00 UTC (offset off :00 to play nice
+# with GitHub Actions scheduler load).
+on:
+  schedule:
+    - cron: "13 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Fetch + commit contributions.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Fetch contributions
+        env:
+          PERSONAL_GH_TOKEN: ${{ secrets.PERSONAL_GH_TOKEN }}
+          WORK_GH_TOKEN: ${{ secrets.WORK_GH_TOKEN }}
+          WORK_GH_API_URL: ${{ secrets.WORK_GH_API_URL }}
+        run: node scripts/fetch-contributions.mjs
+
+      - name: Commit diff (if any)
+        run: |
+          if [[ -z "$(git status --porcelain public/data/contributions.json)" ]]; then
+            echo "No changes — contributions.json is up to date."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/contributions.json
+          git commit -m "chore(data): sync contributions $(date -u +%Y-%m-%d)"
+          git push
