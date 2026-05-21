@@ -21,6 +21,16 @@
   --type-64: clamp(4rem,      3.06rem + 4.68vw, 6.06rem);
   --type-96: clamp(6rem,      4.4rem + 8vw,     9.5rem);
 
+  --font-size-xs: clamp(0.75rem, 0.71rem + 0.20vw, 0.875rem);
+  --font-size-sm: clamp(0.875rem, 0.82rem + 0.27vw, 1rem);
+  --font-size-base: clamp(1rem, 0.93rem + 0.36vw, 1.125rem);
+  --font-size-md: clamp(1.125rem, 1.04rem + 0.43vw, 1.25rem);
+  --font-size-lg: clamp(1.375rem, 1.24rem + 0.66vw, 1.625rem);
+  --font-size-xl: clamp(1.75rem, 1.51rem + 1.20vw, 2.25rem);
+  --font-size-2xl: clamp(2.25rem, 1.79rem + 2.32vw, 3.5rem);
+  --font-size-3xl: clamp(3rem, 2.10rem + 4.55vw, 5.5rem);
+  --font-size-4xl: clamp(4rem, 2.50rem + 7.50vw, 8rem);
+
   --line-tight:   1.1;
   --line-snug:    1.25;
   --line-default: 1.5;

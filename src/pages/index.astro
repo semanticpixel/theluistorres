@@ -1,12 +1,12 @@
 ---
-import Base from "~/layouts/Base.astro";
-import HeroName from "~/components/HeroName.astro";
-import WorkCard from "~/components/WorkCard.astro";
-import Contributions from "~/components/Contributions.astro";
-import ContributionsInteractive from "~/components/ContributionsInteractive.astro";
 import { getCollection } from "astro:content";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import Contributions from "~/components/Contributions.astro";
+import ContributionsInteractive from "~/components/ContributionsInteractive.astro";
+import HeroName from "~/components/HeroName.astro";
+import WorkCard from "~/components/WorkCard.astro";
+import Base from "~/layouts/Base.astro";
 
 /*
  * Featured work — limited to 3 entries marked `featured: true` in the
@@ -120,10 +120,11 @@ try {
   }
 
   .hero__pitch {
-    font-family: var(--font-body);
+    font-family: var(--font-display);
+    font-style: italic;
     font-size: var(--type-21);
     line-height: var(--line-snug);
-    color: var(--color-text-muted);
+    color: var(--color-text-default);
     max-width: 30ch;
   }
 
