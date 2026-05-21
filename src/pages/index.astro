@@ -93,25 +93,30 @@ try {
   }
 
   .hero {
-    position: relative;
+    /* Stack `.hero__graph` and `.hero__type` in a single grid cell so the
+       graph sizes to its SVG's intrinsic aspect ratio (a thin horizontal
+       band) instead of being stretched to fill the entire 60svh hero
+       (which made the cells live in a small central strip surrounded by
+       empty SVG whitespace — the mask then mostly fell on the empty
+       region and the cells looked hard-edged). With grid stacking + an
+       SVG that's content-height, the mask draws on exactly the cell
+       band and the feather lands where intended. */
     isolation: isolate;
     min-block-size: 60svh;
     display: grid;
-    align-content: center;
     padding-block: var(--space-7);
   }
 
+  .hero > * {
+    grid-area: 1 / 1;
+    align-self: center;
+  }
+
   .hero__graph {
-    /* Name-aligned horizon: the grid fills the full hero bounds, then a
-       CSS ellipse mask reveals a wide horizontal band centered on the
-       name's eyeline. Asymmetric (70% × 60%) so the falloff is gentler
-       horizontally than vertically — type + texture as one composition.
-       The 35%/80% stops give a true opaque plateau + long soft fade
-       (matches the original Phase-0 prototype). */
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+    /* Stretch horizontally; vertical size derives from the SVG inside. */
+    justify-self: stretch;
     z-index: -1;
+    pointer-events: none;
     overflow: hidden;
     -webkit-mask-image: radial-gradient(ellipse 70% 60% at 80% 50%, #000 35%, transparent 80%);
             mask-image: radial-gradient(ellipse 70% 60% at 80% 50%, #000 35%, transparent 80%);
@@ -121,6 +126,8 @@ try {
     display: grid;
     gap: var(--space-5);
     max-width: 56ch;
+    position: relative;
+    z-index: 1;
   }
 
   .hero__pitch {

@@ -127,7 +127,13 @@ const ariaLabel = snapshot
 <style>
   .contributions {
     inline-size: 100%;
-    block-size: 100%;
+    /* Height derives from the viewBox aspect ratio. The previous
+       `block-size: 100%` forced the SVG to fill its container, which
+       left the actual cell band as a small central strip surrounded by
+       empty whitespace — masks applied at the container level then
+       mostly missed the cells. Letting the SVG be content-height makes
+       the container hug the cells, so any mask hits the band directly. */
+    block-size: auto;
     opacity: 0.18;
     pointer-events: none;
   }
