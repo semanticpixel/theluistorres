@@ -26,11 +26,11 @@
  *     ($ gh auth login)
  *   - (Optional — only needed for GitLab) either:
  *     • `glab` CLI installed and logged in    [preferred]
- *       ($ glab auth login --hostname gitlab.com)
- *     • OR set $GITLAB_TOKEN + $GITLAB_USERNAME explicitly
- *   - $GITLAB_HOST overrides the host used for both glab lookup and the
- *     calendar.json fetch. Defaults to gitlab.com — set to e.g.
- *     `gitlab.grammarly.io` for self-hosted instances.
+ *       ($ glab auth login --hostname <your-gitlab-host>)
+ *       The host is auto-discovered from `glab auth status` — works for
+ *       gitlab.com AND self-hosted instances with zero config.
+ *     • OR set $GITLAB_TOKEN + $GITLAB_USERNAME explicitly. In that case
+ *       set $GITLAB_HOST too (defaults to gitlab.com).
  *
  * Usage:
  *   $ pnpm run sync:work
@@ -48,7 +48,6 @@ import { dirname, resolve } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const OUT_PATH = resolve(root, "public/data/work-contributions.json");
-const GITLAB_HOST = process.env.GITLAB_HOST ?? "gitlab.com";
 
 /* ---- range: last 365 days, UTC midnight aligned ---- */
 function range() {
@@ -93,41 +92,57 @@ async function fetchGitHub() {
 /* ---- GitLab ---- */
 /*
  * Auth precedence:
- *   1. `glab` CLI auth (preferred — mirrors the `gh` pattern, no env vars
- *      to keep in sync). Reads the token + logged-in username from
- *      `glab auth status --show-token`.
- *   2. Env vars $GITLAB_TOKEN + $GITLAB_USERNAME (fallback for machines
- *      that don't have glab installed).
+ *   1. Env vars $GITLAB_TOKEN + $GITLAB_USERNAME (+ optional $GITLAB_HOST,
+ *      default gitlab.com). For CI or machines without glab.
+ *   2. `glab` CLI auth (preferred for local dev — mirrors the `gh` pattern,
+ *      no env vars to keep in sync). The host is auto-discovered from the
+ *      `REST API Endpoint:` line in `glab auth status` output, so it works
+ *      transparently for both gitlab.com and self-hosted instances.
  *
- * Once we have a (token, username) pair, hit the same /users/<name>/calendar.json
- * endpoint — the heatmap GitLab renders on the profile page. Authenticated,
- * the response includes private contributions on the requested profile.
+ * Once we have (host, token, username), hit /api/v4/events filtered by
+ * date. Push events contribute their commit_count; everything else (MR,
+ * issue, comment, review) counts as 1 — matches the heatmap's intuition.
  */
 function resolveGitLabAuth() {
-  const env = { token: process.env.GITLAB_TOKEN, username: process.env.GITLAB_USERNAME };
-  if (env.token && env.username) return { ...env, source: "env" };
+  if (process.env.GITLAB_TOKEN && process.env.GITLAB_USERNAME) {
+    return {
+      host: process.env.GITLAB_HOST ?? "gitlab.com",
+      token: process.env.GITLAB_TOKEN,
+      username: process.env.GITLAB_USERNAME,
+      source: "env",
+    };
+  }
 
   /*
    * `glab auth status --show-token` writes to *stderr* (even on success,
    * exit 0) something like:
    *   gitlab.com
    *     ✓ Logged in to gitlab.com as <username> (/...config/glab-cli/config.yml)
+   *     ✓ REST API Endpoint: https://gitlab.com/api/v4/
    *     ✓ Token found: glpat-xxxxxxxxxxxx
    * Older versions used "Token:" instead of "Token found:" and sometimes
    * wrote to stdout. We use spawnSync so we can read both streams and
    * tolerate either format.
+   *
+   * The host comes from the REST API Endpoint line — this is what the API
+   * actually answers on, even when glab profiles use an SSH alias hostname
+   * (e.g. `ssh.gitlab.grammarly.io` glab profile pointing at REST endpoint
+   * `gitlab.grammarly.io`). Falls back to the "Logged in to" host if no
+   * REST endpoint is printed (older glab).
    */
-  const result = spawnSync(
-    "glab",
-    ["auth", "status", "--hostname", GITLAB_HOST, "--show-token"],
-    { encoding: "utf8" },
-  );
+  const result = spawnSync("glab", ["auth", "status", "--show-token"], { encoding: "utf8" });
   if (result.error) return null; // glab not installed
   const blob = (result.stdout ?? "") + (result.stderr ?? "");
-  const userMatch = blob.match(/Logged in to \S+ as (\S+)/);
+  const loginMatch = blob.match(/Logged in to (\S+) as (\S+)/);
   const tokenMatch = blob.match(/Token(?:\s+found)?:\s*(\S+)/);
-  if (userMatch && tokenMatch) {
-    return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
+  const restMatch = blob.match(/REST API Endpoint:\s+https?:\/\/([^/\s]+)/);
+  if (loginMatch && tokenMatch) {
+    return {
+      host: restMatch?.[1] ?? loginMatch[1],
+      token: tokenMatch[1],
+      username: loginMatch[2],
+      source: "glab",
+    };
   }
 
   return null;
@@ -137,7 +152,7 @@ async function fetchGitLab() {
   const auth = resolveGitLabAuth();
   if (!auth) {
     console.log(
-      `gitlab: skipped (run \`glab auth login --hostname ${GITLAB_HOST}\` OR set GITLAB_TOKEN + GITLAB_USERNAME; override host with GITLAB_HOST)`,
+      "gitlab: skipped (run `glab auth login --hostname <your-gitlab-host>` OR set GITLAB_TOKEN + GITLAB_USERNAME)",
     );
     return [];
   }
@@ -158,7 +173,7 @@ async function fetchGitLab() {
   const counts = new Map();
   let page = 1;
   for (;;) {
-    const url = `https://${GITLAB_HOST}/api/v4/events?per_page=100&page=${page}&after=${from.slice(0, 10)}&before=${to.slice(0, 10)}`;
+    const url = `https://${auth.host}/api/v4/events?per_page=100&page=${page}&after=${from.slice(0, 10)}&before=${to.slice(0, 10)}`;
     const res = await fetch(url, { headers });
     if (!res.ok) throw new Error(`gitlab: HTTP ${res.status} on ${url}`);
     const events = await res.json();
@@ -178,7 +193,7 @@ async function fetchGitLab() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, count]) => ({ date, count }));
   const total = days.reduce((s, d) => s + d.count, 0);
-  console.log(`gitlab: ${auth.username}@${GITLAB_HOST} → ${total} contributions (auth via ${auth.source})`);
+  console.log(`gitlab: ${auth.username}@${auth.host} → ${total} contributions (auth via ${auth.source})`);
   return days;
 }
 
