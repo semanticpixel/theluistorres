@@ -2,24 +2,28 @@
 /*
  * fetch-contributions.mjs
  *
- * Pulls the last ~year of GitHub contribution-calendar data, optionally
- * merging two tokens (personal + work), writes `public/data/contributions.json`.
+ * Pulls the last ~year of GitHub contribution-calendar data for the
+ * personal account, optionally merges in a manually-committed snapshot
+ * of work contributions, writes `public/data/contributions.json`.
  *
  * Required env:
- *   PERSONAL_GH_TOKEN   — classic or fine-grained PAT with `read:user` scope.
+ *   PERSONAL_GH_TOKEN   — classic or fine-grained PAT with `read:user`
+ *                         (classic) or appropriate fine-grained scope.
  *
- * Optional env:
- *   WORK_GH_TOKEN       — same shape; daily counts get summed with personal.
- *   WORK_GH_API_URL     — GraphQL endpoint for GitHub Enterprise Server hosts
- *                         (e.g. `https://github.example.com/api/graphql`).
- *                         Defaults to github.com when only the personal token
- *                         is set; defaults per-token when both are set.
+ * Optional input:
+ *   public/data/work-contributions.json — written by
+ *     `scripts/fetch-work-contributions.mjs` (a local-only sync that uses
+ *     the developer's logged-in `gh` CLI session to pull work-GH + GitLab
+ *     contributions). If present, its daily counts get summed in here.
+ *     The file isn't read from secrets; it's just committed alongside the
+ *     code on whatever cadence makes sense — see that script's header
+ *     for the rationale.
  *
  * The script is intentionally dependency-free — no @octokit, no graphql-request,
  * just `fetch`. Smaller surface, easier to read, easier to debug in CI logs.
  */
 
-import { writeFile, mkdir } from "node:fs/promises";
+import { writeFile, mkdir, readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -27,8 +31,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 
 const personalToken = process.env.PERSONAL_GH_TOKEN;
-const workToken = process.env.WORK_GH_TOKEN;
-const workApiUrl = process.env.WORK_GH_API_URL || "https://api.github.com/graphql";
 
 if (!personalToken) {
   console.error("fetch-contributions: PERSONAL_GH_TOKEN is required.");
@@ -161,6 +163,36 @@ function mergeMaps(a, b) {
   return out;
 }
 
+/*
+ * Optional work snapshot: a JSON file committed by hand from a local run
+ * of fetch-work-contributions.mjs. Shape:
+ *   {
+ *     "lastUpdated": "...",
+ *     "range": { "from": "...", "to": "..." },
+ *     "sources": ["github", "gitlab"],
+ *     "totalContributions": <n>,
+ *     "contributions": [{ "date": "YYYY-MM-DD", "count": <n> }, ...]
+ *   }
+ * Dates outside the personal sync's window are dropped silently.
+ */
+async function readWorkSnapshot() {
+  const path = resolve(root, "public/data/work-contributions.json");
+  try {
+    await stat(path);
+  } catch {
+    return null;
+  }
+  try {
+    const raw = await readFile(path, "utf8");
+    const json = JSON.parse(raw);
+    if (!Array.isArray(json.contributions)) return null;
+    return json;
+  } catch (err) {
+    console.warn(`fetch-contributions: ignoring unreadable ${path}: ${err.message}`);
+    return null;
+  }
+}
+
 const { from, to } = range();
 
 const personal = await fetchCalendar({
@@ -172,10 +204,22 @@ const personal = await fetchCalendar({
 let merged = flattenCalendar(personal);
 let total = personal.totalContributions;
 
-if (workToken) {
-  const work = await fetchCalendar({ token: workToken, apiUrl: workApiUrl, from, to });
-  merged = mergeMaps(merged, flattenCalendar(work));
-  total += work.totalContributions;
+const workSnapshot = await readWorkSnapshot();
+const sources = ["personal"];
+if (workSnapshot) {
+  const workMap = new Map();
+  for (const d of workSnapshot.contributions) {
+    /* Drop days outside our sync window so the level percentile bucketing
+       only sees comparable timestamps. */
+    if (d.date >= from.slice(0, 10) && d.date <= to.slice(0, 10)) {
+      workMap.set(d.date, { date: d.date, count: d.count, level: 0 });
+    }
+  }
+  merged = mergeMaps(merged, workMap);
+  total += [...workMap.values()].reduce((s, d) => s + d.count, 0);
+  for (const src of workSnapshot.sources ?? []) {
+    if (!sources.includes(src)) sources.push(src);
+  }
 }
 
 const days = rebucketLevels([...merged.values()].sort((a, b) => a.date.localeCompare(b.date)));
@@ -189,7 +233,7 @@ const out = {
     streak,
     todayCount: today?.count ?? 0,
     range: { from, to },
-    sources: workToken ? ["personal", "work"] : ["personal"],
+    sources,
   },
   contributions: days,
 };
@@ -199,5 +243,5 @@ await mkdir(dir, { recursive: true });
 await writeFile(resolve(dir, "contributions.json"), JSON.stringify(out, null, 2) + "\n");
 
 console.log(
-  `fetch-contributions: ${days.length} days · ${total} total · ${streak}-day streak · today ${today?.count ?? 0}`,
+  `fetch-contributions: ${days.length} days · ${total} total · ${streak}-day streak · today ${today?.count ?? 0} · sources=${sources.join("+")}`,
 );

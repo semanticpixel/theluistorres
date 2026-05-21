@@ -32,9 +32,12 @@ jobs:
 
       - name: Fetch contributions
         env:
+          # Only the personal token runs in CI. Work contributions come
+          # from a committed snapshot at public/data/work-contributions.json,
+          # produced by a local run of scripts/fetch-work-contributions.mjs
+          # — see that script's header for why org policy makes the CI path
+          # impractical.
           PERSONAL_GH_TOKEN: ${{ secrets.PERSONAL_GH_TOKEN }}
-          WORK_GH_TOKEN: ${{ secrets.WORK_GH_TOKEN }}
-          WORK_GH_API_URL: ${{ secrets.WORK_GH_API_URL }}
         run: node scripts/fetch-contributions.mjs
 
       - name: Commit diff (if any)
