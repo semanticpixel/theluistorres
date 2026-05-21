@@ -28,6 +28,9 @@
  *     • `glab` CLI installed and logged in    [preferred]
  *       ($ glab auth login --hostname gitlab.com)
  *     • OR set $GITLAB_TOKEN + $GITLAB_USERNAME explicitly
+ *   - $GITLAB_HOST overrides the host used for both glab lookup and the
+ *     calendar.json fetch. Defaults to gitlab.com — set to e.g.
+ *     `gitlab.grammarly.io` for self-hosted instances.
  *
  * Usage:
  *   $ pnpm run sync:work
@@ -37,7 +40,7 @@
  * The script is dependency-free — just node:* and the CLIs as subprocesses.
  */
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -45,6 +48,7 @@ import { dirname, resolve } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const OUT_PATH = resolve(root, "public/data/work-contributions.json");
+const GITLAB_HOST = process.env.GITLAB_HOST ?? "gitlab.com";
 
 /* ---- range: last 365 days, UTC midnight aligned ---- */
 function range() {
@@ -103,37 +107,27 @@ function resolveGitLabAuth() {
   const env = { token: process.env.GITLAB_TOKEN, username: process.env.GITLAB_USERNAME };
   if (env.token && env.username) return { ...env, source: "env" };
 
-  try {
-    /*
-     * `glab auth status --show-token` writes to stderr something like:
-     *   gitlab.com
-     *     ✓ Logged in to gitlab.com as <username> (oauth_token, /...config/glab-cli/config.yml)
-     *     ✓ Git operations for gitlab.com configured to use https protocol.
-     *     ✓ Token: glpat-xxxxxxxxxxxx
-     *     ✓ Token scopes: api, read_user
-     * We grep both lines and combine. If glab isn't installed or no session
-     * is active, the command exits non-zero and we fall through.
-     */
-    const out = execFileSync(
-      "glab",
-      ["auth", "status", "--hostname", "gitlab.com", "--show-token"],
-      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
-    );
-    const blob = out + ""; // status often goes to stdout in newer glab; cover both
-    const userMatch = blob.match(/Logged in to \S+ as (\S+)/);
-    const tokenMatch = blob.match(/Token:\s*(\S+)/);
-    if (userMatch && tokenMatch) {
-      return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
-    }
-  } catch (err) {
-    /* glab not installed OR not logged in OR newer glab wrote to stderr;
-       try the stderr buffer before giving up. */
-    const stderr = err.stderr?.toString() ?? "";
-    const userMatch = stderr.match(/Logged in to \S+ as (\S+)/);
-    const tokenMatch = stderr.match(/Token:\s*(\S+)/);
-    if (userMatch && tokenMatch) {
-      return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
-    }
+  /*
+   * `glab auth status --show-token` writes to *stderr* (even on success,
+   * exit 0) something like:
+   *   gitlab.com
+   *     ✓ Logged in to gitlab.com as <username> (/...config/glab-cli/config.yml)
+   *     ✓ Token found: glpat-xxxxxxxxxxxx
+   * Older versions used "Token:" instead of "Token found:" and sometimes
+   * wrote to stdout. We use spawnSync so we can read both streams and
+   * tolerate either format.
+   */
+  const result = spawnSync(
+    "glab",
+    ["auth", "status", "--hostname", GITLAB_HOST, "--show-token"],
+    { encoding: "utf8" },
+  );
+  if (result.error) return null; // glab not installed
+  const blob = (result.stdout ?? "") + (result.stderr ?? "");
+  const userMatch = blob.match(/Logged in to \S+ as (\S+)/);
+  const tokenMatch = blob.match(/Token(?:\s+found)?:\s*(\S+)/);
+  if (userMatch && tokenMatch) {
+    return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
   }
 
   return null;
@@ -143,27 +137,48 @@ async function fetchGitLab() {
   const auth = resolveGitLabAuth();
   if (!auth) {
     console.log(
-      "gitlab: skipped (run `glab auth login --hostname gitlab.com` OR set GITLAB_TOKEN + GITLAB_USERNAME)",
+      `gitlab: skipped (run \`glab auth login --hostname ${GITLAB_HOST}\` OR set GITLAB_TOKEN + GITLAB_USERNAME; override host with GITLAB_HOST)`,
     );
     return [];
   }
 
-  const url = `https://gitlab.com/users/${encodeURIComponent(auth.username)}/calendar.json`;
-  const res = await fetch(url, {
-    headers: { "PRIVATE-TOKEN": auth.token, "user-agent": "projectluis-work-sync" },
-  });
-  if (!res.ok) {
-    throw new Error(`gitlab: HTTP ${res.status} on ${url}`);
+  /*
+   * We use /api/v4/events instead of the public /users/<name>/calendar.json.
+   * Reason: calendar.json is a browser-session endpoint — on self-hosted
+   * instances (e.g. gitlab.grammarly.io) it 302-redirects to /users/sign_in
+   * even with a valid PRIVATE-TOKEN. The events REST endpoint honors the
+   * token on both gitlab.com and self-hosted, returning every event the
+   * authenticated user can see — including private project activity.
+   *
+   * Heatmap-equivalent counting: push events contribute commit_count
+   * (a push of 3 commits = 3 contributions); other events (MR opened,
+   * issue closed, comment, etc.) each count as 1.
+   */
+  const headers = { "PRIVATE-TOKEN": auth.token, "user-agent": "projectluis-work-sync" };
+  const counts = new Map();
+  let page = 1;
+  for (;;) {
+    const url = `https://${GITLAB_HOST}/api/v4/events?per_page=100&page=${page}&after=${from.slice(0, 10)}&before=${to.slice(0, 10)}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`gitlab: HTTP ${res.status} on ${url}`);
+    const events = await res.json();
+    if (!Array.isArray(events) || events.length === 0) break;
+    for (const e of events) {
+      const date = e.created_at?.slice(0, 10);
+      if (!date) continue;
+      const delta = e.push_data?.commit_count ?? 1;
+      counts.set(date, (counts.get(date) ?? 0) + delta);
+    }
+    const next = res.headers.get("x-next-page");
+    if (!next) break;
+    page = Number(next);
   }
-  const cal = await res.json();
 
-  const fromDate = from.slice(0, 10);
-  const toDate = to.slice(0, 10);
-  const days = Object.entries(cal)
-    .filter(([date]) => date >= fromDate && date <= toDate)
-    .map(([date, count]) => ({ date, count: Number(count) || 0 }));
+  const days = [...counts.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, count]) => ({ date, count }));
   const total = days.reduce((s, d) => s + d.count, 0);
-  console.log(`gitlab: ${auth.username} → ${total} contributions (auth via ${auth.source})`);
+  console.log(`gitlab: ${auth.username}@${GITLAB_HOST} → ${total} contributions (auth via ${auth.source})`);
   return days;
 }
 
