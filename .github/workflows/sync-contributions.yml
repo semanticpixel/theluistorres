@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # so the final step can dispatch deploy-pages.yml
 
 jobs:
   sync:
@@ -41,9 +42,11 @@ jobs:
         run: node scripts/fetch-contributions.mjs
 
       - name: Commit diff (if any)
+        id: commit
         run: |
           if [[ -z "$(git status --porcelain public/data/contributions.json)" ]]; then
             echo "No changes — contributions.json is up to date."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name  "github-actions[bot]"
@@ -51,3 +54,16 @@ jobs:
           git add public/data/contributions.json
           git commit -m "chore(data): sync contributions $(date -u +%Y-%m-%d)"
           git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger Pages deploy
+        # Commits authored by GITHUB_TOKEN don't fire the `push` trigger on
+        # deploy-pages.yml (GitHub's loop-prevention rule), so a fresh JSON
+        # would otherwise sit on master until the next code push. Explicit
+        # workflow_dispatch IS allowed from GITHUB_TOKEN — fire it here so
+        # the home page rebuilds with the new totals every time the data
+        # actually changes.
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy-pages.yml --ref master
