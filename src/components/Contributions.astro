@@ -91,7 +91,7 @@ const ariaLabel = snapshot
 <svg
   class="contributions"
   viewBox={`0 0 ${W} ${H}`}
-  preserveAspectRatio="xMaxYMax meet"
+  preserveAspectRatio="xMidYMid meet"
   role="img"
   aria-label={ariaLabel}
   data-contributions
@@ -101,7 +101,12 @@ const ariaLabel = snapshot
   data-last-updated={lastUpdated}
 >
   <defs>
-    <radialGradient id="contributions-mask" cx="100%" cy="100%" r="120%">
+    {/* Reveal a right-center band so the cells read as a horizon line
+        aligned with the hero name's eyeline — type and texture as one
+        composition, not type with a corner decoration. The previous
+        bottom-right anchor pushed the visible grid below the type lockup
+        and orphaned it visually. */}
+    <radialGradient id="contributions-mask" cx="100%" cy="50%" r="120%">
       <stop offset="0%"  stop-color="white" stop-opacity="1" />
       <stop offset="60%" stop-color="white" stop-opacity="0.6" />
       <stop offset="100%" stop-color="white" stop-opacity="0" />

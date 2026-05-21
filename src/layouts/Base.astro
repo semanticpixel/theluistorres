@@ -44,16 +44,28 @@ const canonical = new URL(Astro.url.pathname, Astro.site).toString();
        * Pre-paint theme resolution: read localStorage, set data-theme on <html>
        * before first paint to prevent a flash of incorrect theme. Falls back to
        * system preference when nothing is stored.
+       *
+       * ClientRouter swaps the document on every navigation, so the stored
+       * preference also has to be re-applied to `e.newDocument` *before* the
+       * swap commits — otherwise the new page paints with whatever theme its
+       * server-rendered HTML had (i.e. none → falls back to system pref),
+       * flickering away from the user's choice.
        */
       (function () {
-        try {
-          const stored = localStorage.getItem("theme");
-          if (stored === "light" || stored === "dark") {
-            document.documentElement.dataset.theme = stored;
+        function apply(doc) {
+          try {
+            var stored = localStorage.getItem("theme");
+            if (stored === "light" || stored === "dark") {
+              doc.documentElement.dataset.theme = stored;
+            }
+          } catch (_) {
+            /* private mode, etc — leave system preference in charge */
           }
-        } catch (_) {
-          /* private mode, etc — leave system preference in charge */
         }
+        apply(document);
+        document.addEventListener("astro:before-swap", function (e) {
+          apply(e.newDocument);
+        });
       })();
     </script>
 
