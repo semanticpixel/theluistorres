@@ -39,6 +39,7 @@ const ROUTES = [
   "/sandbox",
   "/sandbox/token-scale",
   "/sandbox/motion-lab",
+  "/sandbox/contribution-sparkline",
   "/theme",
   "/404",
   "/es",

@@ -1,0 +1,323 @@
+---
+/*
+ * Contribution sparkline — same JSON the hero already consumes, redrawn as a
+ * single-row line + area chart with a pointer-driven cursor and tooltip.
+ *
+ * Reads `public/data/contributions.json` at build time (produced by
+ * `sync-contributions.yml`). Falls back to a flat 365-day timeline if the
+ * file isn't present yet — mirrors `Contributions.astro`'s empty-state.
+ *
+ * The whole sketch is one file: the data fetch, the SVG, the hover handler,
+ * and the styles. No island, no framework — just an inline `<script>` that
+ * maps pointer-x to the nearest day index.
+ */
+
+import Base from "~/layouts/Base.astro";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+interface Day {
+  date: string;
+  count: number;
+  level: number;
+}
+interface Snapshot {
+  lastUpdated: string;
+  meta: {
+    totalContributions: number;
+    streak: number;
+    todayCount: number;
+    range: { from: string; to: string };
+    sources: string[];
+  };
+  contributions: Day[];
+}
+
+function emptyDays(): Day[] {
+  const out: Day[] = [];
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+  for (let i = 364; i >= 0; i--) {
+    const d = new Date(end);
+    d.setUTCDate(d.getUTCDate() - i);
+    out.push({ date: d.toISOString().slice(0, 10), count: 0, level: 0 });
+  }
+  return out;
+}
+
+let snapshot: Snapshot | null = null;
+try {
+  const raw = readFileSync(resolve(process.cwd(), "public/data/contributions.json"), "utf8");
+  snapshot = JSON.parse(raw);
+} catch (_) {
+  snapshot = null;
+}
+
+const days = snapshot?.contributions ?? emptyDays();
+const total = snapshot?.meta.totalContributions ?? days.reduce((s, d) => s + d.count, 0);
+const maxCount = days.reduce((m, d) => Math.max(m, d.count), 0);
+const sourceLabel = snapshot ? "live" : "seeded preview";
+
+/* viewBox is intentionally wide-and-short so the chart reads as one continuous
+   gesture. preserveAspectRatio="none" lets it stretch to fill the container —
+   y-coords scale with height, which is what a sparkline wants. */
+const VB_W = 1000;
+const VB_H = 120;
+const PAD_Y = 8;
+const chartH = VB_H - PAD_Y * 2;
+const safeMax = Math.max(maxCount, 1);
+
+const xFor = (i: number) => (i / (days.length - 1)) * VB_W;
+const yFor = (count: number) => PAD_Y + (1 - count / safeMax) * chartH;
+
+const linePoints = days
+  .map((d, i) => `${xFor(i).toFixed(2)},${yFor(d.count).toFixed(2)}`)
+  .join(" ");
+const areaPoints = `0,${VB_H} ${linePoints} ${VB_W},${VB_H}`;
+
+/* Compact payload for the hover handler — date + count only. Stashed as a
+   data-* attribute on the figure so the script has a single DOM read and no
+   script-ordering questions. */
+const compact = days.map((d) => ({ d: d.date, c: d.count }));
+---
+
+<Base
+  title="Contribution sparkline — Sandbox"
+  description="A single-row sparkline of the last 365 days of contributions, drawn from the same JSON the hero consumes."
+  transitions={false}
+>
+  <main class="lab">
+    <header class="lab__head">
+      <p class="lab__eyebrow"><a href="/sandbox">sandbox</a> / contribution-sparkline</p>
+      <h1 class="lab__title">Contribution sparkline</h1>
+      <p class="lab__lede">
+        The same JSON the homepage hero reads, redrawn as a line. Move the cursor across to scrub
+        the year — the dashed guide tracks your x position, the nearest day's dot scales up, and
+        the tooltip reads the date and count. One file, no framework, no island.
+      </p>
+    </header>
+
+    <figure class="spark" data-spark data-days={JSON.stringify(compact)}>
+      <div class="spark__chart">
+        <div class="spark__inner">
+          <svg
+            class="spark__svg"
+            viewBox={`0 0 ${VB_W} ${VB_H}`}
+            preserveAspectRatio="none"
+            role="img"
+            aria-label={`Daily contribution sparkline for the last 365 days — ${total} contributions total, peak of ${maxCount} in one day.`}
+          >
+            <polygon class="spark__area" points={areaPoints} />
+            <polyline class="spark__line" points={linePoints} />
+            <line class="spark__cursor" data-cursor x1="0" y1={PAD_Y} x2="0" y2={VB_H - PAD_Y} />
+            <circle class="spark__dot" data-dot cx="0" cy={VB_H / 2} r="3.5" />
+          </svg>
+
+          <div class="spark__tooltip" data-tooltip aria-hidden="true"></div>
+        </div>
+      </div>
+
+      <figcaption class="spark__caption">
+        <span class="spark__num">{total.toLocaleString("en-US")}</span> total ·
+        max <span class="spark__num">{maxCount}</span> in one day ·
+        source: <span class="spark__source">{sourceLabel}</span>
+      </figcaption>
+    </figure>
+  </main>
+</Base>
+
+<script>
+  /* Sparkline hover — pointer-x maps to nearest day index, drives the dashed
+     cursor line, the active dot, and the tooltip. Stays inert under reduced
+     motion only by not animating; the readout itself is still useful. */
+  const figure = document.querySelector<HTMLElement>("[data-spark]");
+  if (figure) {
+    interface Compact { d: string; c: number; }
+    const days: Compact[] = JSON.parse(figure.dataset.days ?? "[]");
+    const svg = figure.querySelector<SVGSVGElement>(".spark__svg");
+    const cursor = figure.querySelector<SVGLineElement>("[data-cursor]");
+    const dot = figure.querySelector<SVGCircleElement>("[data-dot]");
+    const tooltip = figure.querySelector<HTMLElement>("[data-tooltip]");
+
+    if (svg && cursor && dot && tooltip && days.length > 0) {
+      const VB_W = 1000;
+      const VB_H = 120;
+      const PAD_Y = 8;
+      const chartH = VB_H - PAD_Y * 2;
+      const safeMax = Math.max(...days.map((d) => d.c), 1);
+      const yFor = (c: number) => PAD_Y + (1 - c / safeMax) * chartH;
+
+      let active = -1;
+      const show = (i: number) => {
+        if (i === active) return;
+        active = i;
+        const day = days[i];
+        if (!day) return;
+        const x = (i / (days.length - 1)) * VB_W;
+        cursor.setAttribute("x1", String(x));
+        cursor.setAttribute("x2", String(x));
+        dot.setAttribute("cx", String(x));
+        dot.setAttribute("cy", String(yFor(day.c)));
+        tooltip.textContent = `${day.d} · ${day.c} ${day.c === 1 ? "contribution" : "contributions"}`;
+        figure.style.setProperty("--cursor-x", `${(i / (days.length - 1)) * 100}%`);
+        figure.dataset.active = "true";
+      };
+      const hide = () => {
+        active = -1;
+        delete figure.dataset.active;
+      };
+
+      figure.addEventListener("pointermove", (e) => {
+        const r = svg.getBoundingClientRect();
+        const ratio = (e.clientX - r.left) / r.width;
+        if (ratio < 0 || ratio > 1) return hide();
+        show(Math.round(ratio * (days.length - 1)));
+      });
+      figure.addEventListener("pointerleave", hide);
+    }
+  }
+</script>
+
+<style>
+  .lab {
+    max-width: var(--container-wide);
+    margin-inline: auto;
+    padding: var(--space-7) var(--space-5) var(--space-9);
+    display: grid;
+    gap: var(--space-7);
+  }
+
+  .lab__head {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-end: var(--space-5);
+    border-block-end: 1px solid var(--color-border);
+    max-width: 60ch;
+  }
+
+  .lab__eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-muted);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+  }
+  .lab__eyebrow a { color: inherit; text-decoration: none; }
+  .lab__eyebrow a:hover { color: var(--color-action); }
+
+  .lab__title {
+    font-family: var(--font-display);
+    font-size: var(--type-40);
+    line-height: var(--line-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .lab__lede {
+    color: var(--color-text-muted);
+    max-width: 60ch;
+  }
+
+  .spark {
+    margin: 0;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .spark__chart {
+    padding: var(--space-5);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  .spark__inner {
+    /* The tooltip is positioned with --cursor-x as a percentage of the SVG
+       width, so its containing block has to hug the SVG exactly — if
+       .spark__chart's padding were the containing block, the tooltip would
+       drift by the padding amount on each side. */
+    position: relative;
+  }
+
+  .spark__svg {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 1000 / 120;
+  }
+
+  .spark__area {
+    fill: var(--color-action);
+    opacity: 0.12;
+  }
+
+  .spark__line {
+    fill: none;
+    stroke: var(--color-action);
+    stroke-width: 1.25;
+    stroke-linejoin: round;
+    /* viewBox stretches non-uniformly, so without this the stroke would
+       distort along with the geometry. */
+    vector-effect: non-scaling-stroke;
+  }
+
+  .spark__cursor {
+    stroke: var(--color-text-subtle);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .spark__dot {
+    fill: var(--color-action);
+    stroke: var(--color-bg);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .spark[data-active] .spark__cursor,
+  .spark[data-active] .spark__dot { opacity: 1; }
+
+  .spark__tooltip {
+    position: absolute;
+    inset-block-end: calc(100% - var(--space-2));
+    inset-inline-start: var(--cursor-x, 0%);
+    /* The translate shift centers the tooltip over the cursor x without
+       needing to measure its width in JS — percentages on translate refer
+       to the element's own dimensions. */
+    translate: -50% 0;
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-surface-2);
+    color: var(--color-text-default);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    letter-spacing: var(--tracking-wide);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-out-quart);
+  }
+
+  .spark[data-active] .spark__tooltip { opacity: 1; }
+
+  .spark__caption {
+    font-family: var(--font-mono);
+    font-size: var(--type-12);
+    color: var(--color-text-subtle);
+    letter-spacing: var(--tracking-wide);
+  }
+
+  .spark__num,
+  .spark__source { color: var(--color-text-default); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spark__cursor,
+    .spark__dot,
+    .spark__tooltip { transition: none; }
+  }
+</style>
