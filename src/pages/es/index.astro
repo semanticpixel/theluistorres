@@ -86,20 +86,23 @@ try {
   }
 
   .hero {
-    position: relative;
+    /* See src/pages/index.astro for the rationale on grid-stacking +
+       content-height SVG. */
     isolation: isolate;
     min-block-size: 60svh;
     display: grid;
-    align-content: center;
     padding-block: var(--space-7);
   }
 
+  .hero > * {
+    grid-area: 1 / 1;
+    align-self: center;
+  }
+
   .hero__graph {
-    /* See src/pages/index.astro for the rationale on the ellipse mask. */
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+    justify-self: stretch;
     z-index: -1;
+    pointer-events: none;
     overflow: hidden;
     -webkit-mask-image: radial-gradient(ellipse 70% 60% at 80% 50%, #000 35%, transparent 80%);
             mask-image: radial-gradient(ellipse 70% 60% at 80% 50%, #000 35%, transparent 80%);
@@ -109,6 +112,8 @@ try {
     display: grid;
     gap: var(--space-5);
     max-width: 56ch;
+    position: relative;
+    z-index: 1;
   }
 
   .hero__pitch {
