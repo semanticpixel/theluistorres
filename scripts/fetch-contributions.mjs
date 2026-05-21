@@ -107,13 +107,28 @@ function rebucketLevels(days) {
   });
 }
 
-/* Current streak = consecutive trailing days with count >= 1, walking backwards. */
+/*
+ * Current streak = consecutive trailing days with count >= 1, walking
+ * backwards from the latest day in the range.
+ *
+ * One exception: if *today* has 0 commits, don't treat that as a streak
+ * break — the workflow runs at 08:00 UTC (and ad-hoc dispatches can run
+ * any time), so "no commits yet today" is the normal state for most of
+ * a working day. We skip the trailing zero if and only if it's today,
+ * then count consecutive non-zero days from yesterday backwards. If
+ * yesterday is also zero, the streak is genuinely 0.
+ */
 function computeStreak(days) {
   const sorted = [...days].sort((a, b) => a.date.localeCompare(b.date));
+  if (sorted.length === 0) return 0;
+
+  let i = sorted.length - 1;
+  if (sorted[i].count === 0) i -= 1;
+
   let streak = 0;
-  for (let i = sorted.length - 1; i >= 0; i--) {
-    if (sorted[i].count > 0) streak += 1;
-    else break;
+  while (i >= 0 && sorted[i].count > 0) {
+    streak += 1;
+    i -= 1;
   }
   return streak;
 }
