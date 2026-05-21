@@ -1,16 +1,15 @@
 {
-  "lastUpdated": "2026-05-21T06:55:04.081Z",
+  "lastUpdated": "2026-05-21T11:37:01.672Z",
   "meta": {
-    "totalContributions": 630,
-    "streak": 2,
-    "todayCount": 0,
+    "totalContributions": 634,
+    "streak": 3,
+    "todayCount": 4,
     "range": {
       "from": "2025-05-21T00:00:00.000Z",
       "to": "2026-05-21T00:00:00.000Z"
     },
     "sources": [
-      "personal",
-      "work"
+      "personal"
     ]
   },
   "contributions": [
@@ -1491,8 +1490,8 @@
     },
     {
       "date": "2026-03-12",
-      "count": 1,
-      "level": 1
+      "count": 0,
+      "level": 0
     },
     {
       "date": "2026-03-13",
@@ -1836,13 +1835,13 @@
     },
     {
       "date": "2026-05-20",
-      "count": 69,
+      "count": 70,
       "level": 4
     },
     {
       "date": "2026-05-21",
-      "count": 0,
-      "level": 0
+      "count": 4,
+      "level": 1
     }
   ]
 }
