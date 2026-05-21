@@ -19,7 +19,8 @@
     "astro": "astro",
     "og": "node scripts/og-image.mjs",
     "typecheck": "astro check",
-    "audit:a11y": "node scripts/audit-a11y.mjs"
+    "audit:a11y": "node scripts/audit-a11y.mjs",
+    "sync:work": "node scripts/fetch-work-contributions.mjs"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
