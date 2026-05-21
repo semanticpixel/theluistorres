@@ -22,18 +22,19 @@
  *   work side (weekly cadence works fine), commit, push.
  *
  * Prerequisites:
- *   - `gh` CLI installed and logged in as the WORK account
+ *   - `gh` CLI installed and logged in as the WORK GitHub account
  *     ($ gh auth login)
- *   - (Optional, only if you want GitLab counts merged in)
- *     $ export GITLAB_TOKEN=<personal access token, scope `read_user`>
- *     $ export GITLAB_USERNAME=<your gitlab handle>
+ *   - (Optional — only needed for GitLab) either:
+ *     • `glab` CLI installed and logged in    [preferred]
+ *       ($ glab auth login --hostname gitlab.com)
+ *     • OR set $GITLAB_TOKEN + $GITLAB_USERNAME explicitly
  *
  * Usage:
  *   $ pnpm run sync:work
  *   $ git diff public/data/work-contributions.json
  *   $ git commit -am 'chore: sync work contributions YYYY-MM-DD' && git push
  *
- * The script is dependency-free — just node:* and `gh` as a subprocess.
+ * The script is dependency-free — just node:* and the CLIs as subprocesses.
  */
 
 import { execFileSync } from "node:child_process";
@@ -85,23 +86,71 @@ async function fetchGitHub() {
   return days;
 }
 
-/* ---- GitLab via stored token ---- */
+/* ---- GitLab ---- */
+/*
+ * Auth precedence:
+ *   1. `glab` CLI auth (preferred — mirrors the `gh` pattern, no env vars
+ *      to keep in sync). Reads the token + logged-in username from
+ *      `glab auth status --show-token`.
+ *   2. Env vars $GITLAB_TOKEN + $GITLAB_USERNAME (fallback for machines
+ *      that don't have glab installed).
+ *
+ * Once we have a (token, username) pair, hit the same /users/<name>/calendar.json
+ * endpoint — the heatmap GitLab renders on the profile page. Authenticated,
+ * the response includes private contributions on the requested profile.
+ */
+function resolveGitLabAuth() {
+  const env = { token: process.env.GITLAB_TOKEN, username: process.env.GITLAB_USERNAME };
+  if (env.token && env.username) return { ...env, source: "env" };
+
+  try {
+    /*
+     * `glab auth status --show-token` writes to stderr something like:
+     *   gitlab.com
+     *     ✓ Logged in to gitlab.com as <username> (oauth_token, /...config/glab-cli/config.yml)
+     *     ✓ Git operations for gitlab.com configured to use https protocol.
+     *     ✓ Token: glpat-xxxxxxxxxxxx
+     *     ✓ Token scopes: api, read_user
+     * We grep both lines and combine. If glab isn't installed or no session
+     * is active, the command exits non-zero and we fall through.
+     */
+    const out = execFileSync(
+      "glab",
+      ["auth", "status", "--hostname", "gitlab.com", "--show-token"],
+      { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+    );
+    const blob = out + ""; // status often goes to stdout in newer glab; cover both
+    const userMatch = blob.match(/Logged in to \S+ as (\S+)/);
+    const tokenMatch = blob.match(/Token:\s*(\S+)/);
+    if (userMatch && tokenMatch) {
+      return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
+    }
+  } catch (err) {
+    /* glab not installed OR not logged in OR newer glab wrote to stderr;
+       try the stderr buffer before giving up. */
+    const stderr = err.stderr?.toString() ?? "";
+    const userMatch = stderr.match(/Logged in to \S+ as (\S+)/);
+    const tokenMatch = stderr.match(/Token:\s*(\S+)/);
+    if (userMatch && tokenMatch) {
+      return { token: tokenMatch[1], username: userMatch[1], source: "glab" };
+    }
+  }
+
+  return null;
+}
+
 async function fetchGitLab() {
-  const token = process.env.GITLAB_TOKEN;
-  const username = process.env.GITLAB_USERNAME;
-  if (!token || !username) {
-    console.log("gitlab: skipped (set GITLAB_TOKEN + GITLAB_USERNAME to include)");
+  const auth = resolveGitLabAuth();
+  if (!auth) {
+    console.log(
+      "gitlab: skipped (run `glab auth login --hostname gitlab.com` OR set GITLAB_TOKEN + GITLAB_USERNAME)",
+    );
     return [];
   }
 
-  /*
-   * The /users/<name>/calendar.json endpoint returns the same heatmap GitLab
-   * shows on the profile page — { "YYYY-MM-DD": count, ... }. Authenticated,
-   * it includes private contributions on the requested user's profile.
-   */
-  const url = `https://gitlab.com/users/${encodeURIComponent(username)}/calendar.json`;
+  const url = `https://gitlab.com/users/${encodeURIComponent(auth.username)}/calendar.json`;
   const res = await fetch(url, {
-    headers: { "PRIVATE-TOKEN": token, "user-agent": "projectluis-work-sync" },
+    headers: { "PRIVATE-TOKEN": auth.token, "user-agent": "projectluis-work-sync" },
   });
   if (!res.ok) {
     throw new Error(`gitlab: HTTP ${res.status} on ${url}`);
@@ -114,7 +163,7 @@ async function fetchGitLab() {
     .filter(([date]) => date >= fromDate && date <= toDate)
     .map(([date, count]) => ({ date, count: Number(count) || 0 }));
   const total = days.reduce((s, d) => s + d.count, 0);
-  console.log(`gitlab: ${username} → ${total} contributions`);
+  console.log(`gitlab: ${auth.username} → ${total} contributions (auth via ${auth.source})`);
   return days;
 }
 
