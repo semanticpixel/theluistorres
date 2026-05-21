@@ -66,7 +66,7 @@ const { name } = Astro.props;
     isolation: isolate;
     margin: 0;
     font-family: var(--font-display);
-    font-size: var(--type-96);
+    font-size: var(--type-64);
     font-weight: 300;
     line-height: var(--line-tight);
     letter-spacing: var(--tracking-tight);
@@ -88,11 +88,11 @@ const { name } = Astro.props;
      onto the bone surface gives the small chromatic fringe; in dark mode
      screening the inverted scale reproduces the same fringe direction. */
   .hero-name > *:nth-child(1) { color: light-dark(var(--terracotta-60), var(--terracotta-40)); }
-  .hero-name > *:nth-child(2) { color: light-dark(var(--slate-80),      var(--slate-40)); }
-  .hero-name > *:nth-child(3) { color: light-dark(var(--bone-80),       var(--bone-40)); }
+  .hero-name > *:nth-child(2) { color: light-dark(var(--bone-80),       var(--bone-40)); }
+  .hero-name > *:nth-child(3) { color: light-dark(var(--slate-80),      var(--slate-40)); }
 
   .hero-name > * {
-    mix-blend-mode: light-dark(multiply, screen);
+    mix-blend-mode: multiply;
   }
 
   /* Ambient pulse — set by the JS scheduler. */
