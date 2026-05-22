@@ -4,14 +4,10 @@ summary: "Una migración de tokens de dos años que convirtió el modo oscuro de
 tags: ["design-systems", "color", "accesibilidad"]
 date: 2023-05-12
 featured: true
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "LinkedIn"
 period: "2021–2023"
 ---
-
-> 📝 **Borrador de Claude — pendiente de revisión por Luis.** El encuadre lee
-> limpio; Movimiento + Resultado necesitan el relato en primera persona de Luis
-> sobre la estrategia de despliegue real.
 
 El modo oscuro parece un toggle y en realidad es una reescritura de tokens. En un producto del tamaño de LinkedIn, "lanzar modo oscuro" significa inventariar cada hex hardcodeado en el código, decidir qué *significaba* semánticamente, y luego hilar un token semántico a través de suficientes superficies para que el toggle tenga dónde actuar.
 
@@ -21,24 +17,20 @@ La mayoría de los fallos de "lanzar modo oscuro" no son visuales — son organi
 
 ## Movimiento
 
-*Esqueleto — necesita el relato en primera persona de Luis:*
+El modelo de tokens semánticos vino primero. Cada color en el código tenía que significar algo — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — y el *valor* de ese token tenía que vivir en un solo lugar por modo. El error de nombrado que descarté pronto fueron los tokens nombrados por la propiedad en la que terminaban (`--color-button-bg`). Los tokens nombrados por propiedad te atrapan en la siguiente refactorización. Los semánticos la sobreviven.
 
-- El modelo de tokens semánticos en el que aterrizaste (y lo que rechazaste)
-- El patrón de migración que dejó a los equipos lanzar superficies correctas en modo oscuro de forma incremental
-- Cómo manejaste la cola larga — ilustraciones, colores de marca, embeds de terceros — sin bloquear el lanzamiento
+El patrón de migración fue el problema más difícil. LinkedIn tiene cientos de superficies y el equipo dueño de cada una tiene sus propios plazos. No podía gatillar el modo oscuro para que cada superficie hiciera flip al mismo tiempo; tampoco podía lanzar un producto a medio oscurecer. La salida: cada superficie conservaba sus valores hex hasta que la capa semántica estuviera cableada, momento en el que un solo swap de token hacía toda la superficie correcta en modo oscuro en un único PR. Los equipos podían programar ese swap cuando les calzara; el sistema central iba publicando la capa semántica por delante de ellos.
+
+La cola larga fueron las ilustraciones, los colores de marca y los embeds de terceros. No intentamos hacer eso *adaptativo* — ese es un problema de diseño distinto — los hicimos *aceptables en cualquiera de los dos modos*. Una capa ligera de fallback se encargó de las superficies embebidas que no controlábamos: tratamientos ligeramente desaturados, fondos conscientes del modo donde el arte lo necesitaba, una vía de escape sancionada para los colores que de verdad tenían que quedarse constantes.
 
 ## Resultado
 
-*Esqueleto — necesita la historia de lanzamiento de Luis:*
+El lanzamiento fue interno-primero por diseño. Los empleados corrieron modo oscuro durante semanas antes de que cualquier usuario externo lo recibiera. Eso nos compró la lista de bugs pequeños-pero-reales — el badge que se leía bien en blanco y desaparecía en slate, el embed de terceros con un `#fff` hardcodeado — y un cuadro claro de qué significaba *completo*. Para cuando lanzamos externamente, los bugs de cola larga estaban en el changelog, no en los reportes de usuarios.
 
-- Secuencia de despliegue (geografías, superficies, dogfooding interno)
-- El trabajo de herramientas internas / documentación que hizo legible el modelo de tokens para ingenieros que no son del equipo de sistemas
-- Cómo se veía el conteo de migración cuando lo declaraste completo
+Lo que más me enorgullece no es visible en el toggle. Es que los tokens semánticos siguieron pagando dividendos después de lanzar el modo oscuro. El siguiente refresh de marca se movió por la org en días, no en meses. Una variante de alto contraste encajó encima de la misma capa de tokens. El modo oscuro dejó de ser un proyecto y pasó a ser infraestructura.
 
 ## Qué haría diferente
 
-*Esqueleto — necesita la retro de Luis:*
+Reordenaría un paso. Intentamos migrar superficies a nivel de componente antes de tener los shells de layout sobre tokens semánticos, y eso significó que algunos componentes salieron viéndose correctos sobre un fondo aún hardcodeado — una regresión que se leía como "el sistema no está listo" aunque sí lo estaba. Layouts shells primero; componentes después.
 
-- El token que nombré mal (y todavía lamento)
-- Un paso de migración que reordenaría
-- Lo que el modo dual hace obvio en código de producción pero que las herramientas de diseño todavía esconden
+También empujaría antes el hueco entre las librerías de color de Figma y las semánticas de producción. Los diseñadores trabajaban en colores con nombre que no mapeaban limpiamente al modelo de tokens — lo suficiente cerca para que lo lanzáramos, lo suficiente lejos para que cada handoff necesitara una pasada de traducción. Eso debió ser una única fuente de verdad entre las plataformas. Que es exactamente el trabajo que terminé construyendo — ver [LinkedIn design tooling](/work/linkedin-design-tooling) para el repo de tokens-como-fuente-de-verdad que salió de esta era, y [Superhuman design tooling](/work/superhuman-design-tooling) para hacia dónde va.

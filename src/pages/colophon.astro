@@ -37,11 +37,11 @@ import Prose from "~/components/Prose.astro";
       <h2 id="why-this-site-exists">1. Why this site exists</h2>
 
       <p>
-        A personal site for a design engineer should be the thing itself — every architectural
-        decision visible in the source, every interaction considered, every constraint named.
-        The brief I gave myself: build the site I'd want to read if I were trying to hire me.
-        That meant prose over portfolio bullets, opinions over feature lists, and a colophon
-        long enough to be load-bearing.
+        A personal site should be the thing itself — every architectural decision visible in the
+        source, every interaction considered, every constraint named. The brief I gave myself:
+        build the site I'd want to read if I were trying to hire me. That meant prose over
+        portfolio bullets, opinions over feature lists, and a colophon long enough to be
+        load-bearing.
       </p>
 
       <h2 id="stack">2. Stack</h2>
@@ -197,22 +197,52 @@ import Prose from "~/components/Prose.astro";
       <h2 id="ai-powered-tooling">9. AI-powered tooling</h2>
 
       <p>
-        I ship small open-source tools — mostly MCP servers + Claude skills — that make
-        designers and engineers faster. The pattern: a problem I hit twice on a Tuesday becomes
-        an open-source package by Friday. The link-out index lives here.
+        I ship small open-source tools — mostly MCP servers, Claude skills, and Claude Code
+        plugins — that make designers and engineers faster. The pattern: a problem I hit twice
+        on a Tuesday becomes an open-source package by Friday. The current list:
       </p>
 
-      <p>
-        <em>This section is intentionally minimal until I confirm with myself which repos
-        belong on the public list. The scaffold reads from a frontmatter-fed JSON; tomorrow's
-        commit replaces this paragraph with the rendered list, README excerpts pulled at
-        build time, install snippets where applicable.</em>
-      </p>
+      <dl class="colophon__tooling">
+        <dt><a href="https://github.com/semanticpixel/brio-mcp">brio-mcp</a></dt>
+        <dd>A Figma plugin paired with an MCP server. Lets Claude read, create, and edit
+        designs in Figma directly, so the handoff between design and code stops losing
+        context at every step.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/cascade">cascade</a></dt>
+        <dd>A CLI and TypeScript library that gives AI agents a CSS-inspired cascade for
+        context — org, project, feature, task — with scoping, inheritance, and specificity.
+        Replaces the pile of scattered instruction files with a formal model.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/carn">carn</a></dt>
+        <dd>A CLI plus MCP server that stores typed, scoped notes on a dedicated git branch
+        so agents and teammates can share work-in-progress context. Surfaces constraints
+        and in-flight decisions before someone steps on them.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/trellis">trellis</a></dt>
+        <dd>A desktop app for running multiple AI coding sessions in parallel across
+        different workspaces, with integrated code review and git management. The
+        player-coach view of an agent fleet.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/redline">redline</a></dt>
+        <dd>A terminal UI for reviewing Claude Code plans. Select a range of text, attach a
+        comment, send the structured feedback back to Claude — no more arguing with
+        long-form output in a single chat box.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/abc">abc</a> <em>(always be cooking)</em></dt>
+        <dd>A Claude Code plugin that drives a feature end to end — planning, issues,
+        parallel implementation, review, merge — through Linear or GitHub Issues. The
+        state lives in the tracker, not the chat, so you can invoke a slash command and
+        walk away.</dd>
+
+        <dt><a href="https://github.com/semanticpixel/claude-time-context">claude-time-context</a></dt>
+        <dd>A one-line bash hook that injects the current timestamp into Claude Code at
+        session start, so long-running sessions stop hallucinating about <em>now</em>.</dd>
+      </dl>
 
       <h2 id="what-id-do-at-production-scale">10. What I'd do at production scale</h2>
 
       <p>
-        Honest list of "this is a portfolio, here's how it would change for Anthropic-scale":
+        Honest list of "this is a portfolio, here's how it would change at production scale":
       </p>
 
       <ul>
@@ -292,6 +322,47 @@ import Prose from "~/components/Prose.astro";
 
   .colophon :global(.prose) :global(.colophon__toc a:hover) {
     color: var(--color-action);
+  }
+
+  .colophon :global(.prose) :global(.colophon__tooling) {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-3) var(--space-5);
+    margin-block: var(--space-4);
+  }
+
+  .colophon :global(.prose) :global(.colophon__tooling dt) {
+    font-family: var(--font-mono);
+    font-size: var(--type-14);
+    letter-spacing: var(--tracking-wide);
+    text-transform: lowercase;
+    color: var(--color-text-default);
+  }
+
+  .colophon :global(.prose) :global(.colophon__tooling dt a) {
+    color: inherit;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  .colophon :global(.prose) :global(.colophon__tooling dt a:hover),
+  .colophon :global(.prose) :global(.colophon__tooling dt a:focus-visible) {
+    color: var(--color-action);
+  }
+
+  .colophon :global(.prose) :global(.colophon__tooling dd) {
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 640px) {
+    .colophon :global(.prose) :global(.colophon__tooling) {
+      grid-template-columns: 1fr;
+      gap: var(--space-1);
+    }
+    .colophon :global(.prose) :global(.colophon__tooling dd) {
+      margin-block-end: var(--space-3);
+    }
   }
 
   .colophon :global(.prose) :global(.colophon__refrain) {

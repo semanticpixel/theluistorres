@@ -1,16 +1,13 @@
 ---
 title: "Superhuman.com — from scratch"
 summary: "A marketing site that earns the product's reputation: every frame considered, nothing perfunctory."
-tags: ["marketing-site", "motion", "performance"]
+tags: ["marketing-site", "motion", "performance", "cms"]
 date: 2024-12-01
 featured: true
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "Superhuman"
 period: "2024–present"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Outline only; specific pages /
-> animations / measurements need Luis's first-person account.
 
 Superhuman is a product that signals craft in every micro-interaction. A marketing site that ships at *Marketing-Site Average* would undercut the pitch before the visitor reads it. Building the new superhuman.com meant translating product values — speed, restraint, considered motion — into a presentation surface where those values are the message.
 
@@ -20,24 +17,26 @@ A new product site for an established brand is a constraint puzzle. The audience
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+The first decision that scoped everything was: this site is the product's first frame. Not "the marketing site that explains the product" — the first frame *of* the product. Every interaction had to feel like Superhuman feels: fast, quiet, considered. That meant restricting myself before I started writing CSS. No bloat budget, no carousel temptation, no scroll-jacked "tell us your story" sequence. If a section needed motion to justify itself, the motion had to *be* the section.
 
-- The first decision that scoped the rest of the site
-- The motion-budget conversation (what you let yourself animate, what you didn't)
-- How you got the performance numbers honest in a marketing-site context where bloat is the genre default
+The motion budget was the constraint that did the most work. I gave myself a small set of easing curves and a small set of durations — every animation on the site had to pick from those, and any new addition cost something elsewhere. The result was that motion compounded into a language rather than fragmenting into decoration. Visitors don't notice this consciously; they notice that the site *feels* coherent.
+
+Performance got honest because I refused to put the budget at the end of the schedule. LCP, CLS, INP targets were locked before the site had pages, and every new page had to ship under them. When the perf budget started losing fights with the design — and it did — we changed the design, not the budget.
+
+I also rebuilt how the content gets into the site. Producers were waiting on engineering for every page change, which is the failure mode of any custom CMS. I shifted the content model toward generic, composable content types — page sections that producers can rearrange, plus structured fields that designers and engineers don't have to revisit for a copy tweak. The next step is LLM-generated entries: a producer describes the page they want, the model fills in a draft against the schema, the producer edits. The CMS becomes a writing surface instead of a ticket queue.
 
 ## Outcome
 
-*Skeleton — needs Luis's launch story:*
+The launch perf numbers held. The site shipped under the budget I set and it's stayed there — a result that's only impressive if you've watched a marketing site decay six months after launch as the brand team adds *just one more thing*. The budget being load-bearing in the codebase, not just in the brief, is what kept it standing. {/* LUIS: drop the launch headline number here when shareable — Lighthouse, CWV, the line that lands. */}
 
-- Performance numbers at launch
-- The unexpected piece of feedback from the field
-- The pattern from this project that's leaking into the product surface
+The unexpected piece of field feedback was about typography. The detail I'd assumed was an internal-team-only flex — the tracking, the optical sizing, the way headings actually breathe — was the thing customers and prospects reached for in compliments. It's a useful reminder that craft reads even when nobody can name it.
+
+The pattern that's leaking into product is the motion language. The marketing site established the easing curves and the durations the product is now adopting, which makes it the rare case where the marketing surface returned something to the application surface instead of the other way around.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's retro:*
+There's one animation I'd cut. A section transition that earned its place during build but became wallpaper after a month of looking at it. Animations should keep paying rent; the moment they're decorative, they're cost. I'd run a stricter *still earning?* pass quarterly.
 
-- The animation you'd cut
-- The architectural decision you'd revisit
-- The collaboration pattern with the brand / writing team that you'd start earlier
+I'd also bring the writing team into the motion conversations earlier. The animations and the words are the same surface — when they're designed in parallel the page lands harder than the sum. We figured this out a few sprints in; I'd start there next time.
+
+The CMS shift is the piece I'd push further, faster. Producers shouldn't be waiting on engineering for a copy update in 2025, and they shouldn't be drafting in a blank textarea either. There's a working pattern I'm sketching — see [Superhuman design tooling](/work/superhuman-design-tooling) for where that thinking is heading.

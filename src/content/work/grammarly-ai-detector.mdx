@@ -4,14 +4,10 @@ summary: "Designing the UX for 'is this text AI-generated?' when the answer is s
 tags: ["ai", "ux", "prototyping"]
 date: 2023-11-05
 featured: false
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "Grammarly"
 period: "2023"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Public-information framing.
-> Luis's specific contribution + the design decisions worth highlighting
-> need a first-person rewrite.
 
 The hard part of an AI detector isn't the model. It's the UI for *"probably."* Users want a yes/no; the model gives a confidence band; product needs both honesty and decisiveness. Resolving that gap is a design problem before it's an ML one.
 
@@ -21,24 +17,26 @@ In 2023 every writing surface was figuring out the same question: when AI-genera
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+The presentation pattern I landed on was a *probability band* rather than a label. The detector doesn't say "this is AI-generated" — it says "this passage reads more like AI-generated text than the rest of your draft." The band has a confidence range and a contextual frame ("compared to the rest of your writing"), because a number without a reference is a guess in a uniform.
 
-- The presentation pattern you landed on (and the ones you ruled out)
-- How you handled the false-positive case in the UI — without burying the signal
-- The interaction model for "I disagree with this score"
+The patterns I ruled out: a binary label (too confident, wrong on edge cases, generates false accusations) and a heat map over the full document (visually loud, locks in a single threshold, treats every paragraph as equally worth flagging). Both prioritize the *product's* certainty over the *user's* judgment, which is the wrong direction for a writing tool.
+
+False positives got their own treatment. When the detector flagged something it shouldn't, the user could mark it as such — and the UI changed shape, not just state. The flag turned into a soft *noted* affordance with the score dimmed but visible; nothing snapped back to "no, you're wrong." The detector stops insisting and the user stays in charge of the writing.
+
+"I disagree with this score" was the harder interaction. It had to be a real input back into the model — not a satisfaction survey — and it had to feel weightless. We landed on an inline disagreement gesture that fed into the threshold-tuning loop, with no modal, no rating, no friction. If the user disagreed, the system listened; if they didn't react, the score stood.
 
 ## Outcome
 
-*Skeleton — needs Luis's notes:*
+The research insight that mattered most: users wanted *honesty over decisiveness*. Given a clear choice between a confident wrong answer and a hedged right one, they consistently preferred the hedge. That ran counter to the product instinct (which was to ship a binary because binaries demo well) and reshaped how the team talked about every probabilistic surface that came after.
 
-- Internal user research insights worth surfacing
-- The pattern that generalised to other Grammarly AI surfaces
-- The decision that didn't ship and why
+The pattern that generalized was the *probability band over verdict*. Once the AI detector shipped it, other surfaces with probabilistic outputs started reaching for the same vocabulary instead of inventing new UI for each one. The visual language carried.
+
+The decision that didn't ship was an opt-in *explain this score* deep-dive — paragraph-level breakdowns, model-confidence reasoning, alternatives the detector considered. It tested well in research but the cost-to-trust ratio wasn't there: most users didn't want the deep-dive, and the ones who did would be the ones most likely to argue with it. We left the door open in the architecture; the surface itself didn't earn its bytes.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's retro:*
+I'd revisit the visual encoding. The band-on-text approach reads well in long-form drafts and stops being legible the moment the surface gets dense. A separate canvas — a sidebar score with the passage highlighted *passively* — would have aged better across the contexts the feature ended up in.
 
-- The visual encoding you'd change
-- The threshold conversation you'd reopen with the model team
-- The cross-functional pattern you'd push for earlier
+I'd also reopen the threshold conversation. We set thresholds early, based on the model the detector shipped with; six months later the model had moved and the threshold logic hadn't. Tying threshold tuning to model versioning — so the calibration ships with the weights — should have been the contract from day one.
+
+The cross-functional pattern I'd push for earlier is *the model team in the design review*. Not as observers — as participants. Half the surfaces where the UI lied about the model's behavior could have been caught before they were built if the model team had been in the room with the early prototypes.

@@ -4,14 +4,10 @@ summary: "The AI career coach: making generative AI feel like a colleague, not a
 tags: ["ai", "design-systems", "product"]
 date: 2024-10-15
 featured: true
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "LinkedIn"
 period: "2023–2024"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Public-knowledge framing only.
-> The "Move" + "Outcome" sections need first-person edits before they read as
-> Luis's voice rather than a generic case-study skeleton.
 
 LinkedIn shipped an AI career coach. The interesting question wasn't "can we get the model to give good advice" — model quality wasn't the bottleneck. The question was: **what does it feel like to ask an AI for career advice on a platform where your professional identity is the product?**
 
@@ -21,24 +17,20 @@ By 2023 most "AI inside the product" surfaces had collapsed into either a sideba
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+The first decision was structural: this couldn't live in a chat sidebar. A sidebar's contract with the user is *answer my question* — and most career questions don't have answers, they have follow-up questions. I argued for an inline coach surface that lived inside the user's profile context, with the model's first move being to *narrow the question* rather than respond to it.
 
-- What design decision separated this from "a chat sidebar"?
-- How did you tune the model's voice / question pattern so it read as a coach rather than a search engine?
-- What component-system work needed to land first to make the surface coherent at scale?
+The voice work was the next layer. The model was tuned to ask before it answered, to surface what it couldn't know rather than guess, and to never use the phrases that signal "AI customer service" (*I'd be happy to help you with that*). Coaches don't ingratiate. The system prompt did most of the work; the UI made sure there was somewhere for the question-loop to live.
+
+The component work that had to land first was the message thread itself — typing indicators that didn't lie, a citations pattern for when the model referenced something the user had written, and a graceful state for when the model decided it didn't have enough context yet. None of this is novel in isolation. The work was making it cohere as one surface instead of three.
 
 ## Outcome
 
-*Skeleton — needs Luis's metrics and headlines:*
+What I took away: advice surfaces and answer surfaces want different scaffolding. An answer surface optimizes for speed-to-resolution; an advice surface optimizes for *quality of question asked back*. The team carried that distinction into the next round of AI features, and the chat-sidebar instinct stopped winning by default.
 
-- Engagement / retention numbers from the launch
-- What the team learned about advice surfaces vs. answer surfaces
-- Downstream changes to other AI features in the product
+The other thing that stuck: the AI surface earned its place inside the product chrome rather than tacked on next to it. Once the coach lived in the same surface as the user's profile, it stopped being "the AI thing" and started being part of how the product works. That re-frame mattered more than any single interaction we shipped.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's honest retrospective:*
+I'd push back harder on shipping the coach without an explicit escape hatch into "just give me the answer." Some users — usually the ones with the most specific context — wanted the question loop short-circuited, and the surface didn't let them. A small affordance ("skip the questions") would have respected those users without compromising the coaching pattern for the rest.
 
-- The thing I'd push back on harder, in hindsight
-- The pattern from this project that should have generalised faster across the rest of the product
-- What I learned about working with model teams on surfaces where the model's *style* matters as much as its accuracy
+I'd also start the conversation with the model team about *voice* in week one, not week six. Style isn't a finishing pass on top of an accurate model — it's a constraint that shapes which evals you run and which examples you train on. Treating it as a design problem instead of an editorial one would have saved a round of rework.

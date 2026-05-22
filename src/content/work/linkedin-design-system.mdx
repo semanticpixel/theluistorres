@@ -4,13 +4,10 @@ summary: "A design system isn't components — it's the version of the codebase 
 tags: ["design-systems", "components", "documentation"]
 date: 2022-08-20
 featured: false
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "LinkedIn"
 period: "2020–2023"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Generic framing only; Luis owns
-> the specific decisions and outcomes worth highlighting.
 
 The design system isn't the thing in the docs site. It's the version of the codebase your product engineers actually reach for at 4pm on a Friday when the deadline is Monday. Everything else — the components, the docs, the Figma library — is in service of that one moment.
 
@@ -20,24 +17,22 @@ LinkedIn at this scale has hundreds of engineers shipping into the same product.
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+I picked the components to invest in by watching what teams reinvented. Buttons, dropdowns, dialogs, toasts, form inputs — the predictable five — got the deep treatment: composable APIs, slot patterns, accessibility wired through. Anything past that list, I deliberately left thinner. A documented utility class for spacing was worth more than a `<Spacer>` primitive that nobody would import.
 
-- The components you chose to invest in (and what you deliberately left undocumented)
-- The contribution model — how external teams added primitives without forking the system
-- The docs + linter pairing that turned the system from a library into infrastructure
+The contribution model was what kept the system from forking. Any product team could propose a new primitive — they didn't have to wait for our roadmap — but the proposal lived in our repo under a clear review path. Two outcomes were possible: the primitive got accepted and consolidated (and the proposing team stopped maintaining it), or it stayed in their product as a documented exception. The point was to give teams a *fast yes* path. Once you have that, the bespoke-fork problem mostly evaporates.
+
+Docs paired with lint rules were the third leg. A doc that said "don't reach for raw color tokens directly, use the semantic ones" was a doc we'd write three times and still find violated in code review. The same rule as an ESLint check caught it before the review. The system stopped being a library and became infrastructure the moment its rules were enforceable in CI.
 
 ## Outcome
 
-*Skeleton — needs Luis's metrics:*
+The shift I'm proudest of was behavioral, not numeric. PR reviews changed. People stopped writing *can we use the system component here?* because *not* using the system component became the thing that needed justification. The default flipped.
 
-- Adoption % across the product
-- The pattern-debt audit (what you killed, what you absorbed)
-- The behavioural change you noticed in PR reviews
+The pattern-debt audit was the cleanup work — every six months, sweep the codebase for the components that had drifted, the props that were quietly being abused, the tokens that had earned a deprecation. Some of those got absorbed into the system (the product team had found a pattern worth keeping); others got killed. Either way, the audit ran on a schedule, not on vibes, and the system's surface area stayed proportional to the parts that actually carried weight.
+
+The tooling that made all of this stay coherent is its own story — see [LinkedIn design tooling](/work/linkedin-design-tooling) for the tokens repo, the Figma plugin chain, and the QA plugin that did the unglamorous work.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's retro:*
+I over-built one primitive — a flexible-but-clever container that tried to be every layout. It ended up being used wrong more often than right, because the affordance for "the easy thing" was buried under the API for "the powerful thing." A simpler version that did 80% of the cases, paired with a documented escape hatch, would have shipped sooner and gotten misused less.
 
-- The primitive you over-built
-- The doc that should have been a lint rule
-- The signal you'd watch earlier next time
+And the docs that should have been lint rules — I'd write the lint rule first, every time. The doc is for the cases the lint rule can't cover. Reverse that order and you spend a year asking people to read carefully when you could have spent a week writing a check.

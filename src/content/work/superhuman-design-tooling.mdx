@@ -1,0 +1,38 @@
+---
+title: "Superhuman — design tooling for designers"
+summary: "A Figma plugin paired with an MCP server, plus a designer-owned prototyping playground. The design system stays one thing across Figma, Storybook, and production."
+tags: ["design-systems", "ai-tooling", "figma", "mcp"]
+date: 2025-09-01
+featured: true
+role: "Frontend Engineer"
+company: "Superhuman"
+period: "2024–present"
+---
+
+The design system used to live in three places that pretended to be one: Figma libraries, the component code, and the production app. They drifted, and the drift got blamed on whoever happened to be the last person to touch any of them. What I'm building solves the drift from the *designer's* tool of choice on top — Figma stays a source, and code and previews follow.
+
+## Context
+
+A designer in 2024 has Claude on one side, Figma on the other, and a design system they don't fully control between them. The friction isn't the tools — it's the seams between them. Make the seams disappear and a designer can spec, prototype, preview, and ship without ever leaving the surface they're already in. That's the brief.
+
+## Move
+
+The first piece is a Figma plugin paired with an MCP server. The plugin gives Claude direct access to the Figma canvas — read the current selection, edit a frame, add a component, recolor by token — and the MCP exposes those actions as model tools. The contract is the design system: Claude can't reach for raw shapes when a system component exists, and the plugin enforces that at the API surface, not as a guideline. (The MCP layer lives in the open at [brio-mcp](https://github.com/semanticpixel/brio-mcp); the wrapper around it is internal.)
+
+Wrapped around the plugin is a framework that lets designers *own* the design system end-to-end. The same source publishes the Figma library, the Storybook entries that designers preview live against production data, and the components the consuming apps import. There's one definition of "what the button is" — the rest is a render target. When a designer adjusts the button in code, Figma updates; when they adjust it in Figma, the code surface is regenerated. The drift problem stops being a maintenance task.
+
+The second piece is a prototyping playground. Designers open a workspace pre-loaded with the design-system context, a small library of page and section templates, and a set of Claude skills for the specific interactions they reach for — hero animations, data viz, modal patterns, microcopy fits. They prototype against real components and ship the result as a public sketch. It's not the production app; it's where the production app gets *figured out*.
+
+## Outcome
+
+The change I'm watching for isn't visible in a single metric. It's that designers stop describing handoffs in terms of *engineering bandwidth*. The system is the bandwidth — the engineer in the loop is there for the cases the system can't reach, which is a smaller set than anyone expected. {/* LUIS: drop adoption / throughput / time-to-prototype numbers here when shareable. */}
+
+The pattern is leaking outward. The *Figma is one render target among several* idea isn't new in the design-systems community, but most implementations stop at code generation. This one is two-way — code edits Figma, Figma edits code, and Claude can drive either side. Once you have that, the rest is plumbing.
+
+## What I'd do differently
+
+I started the Figma plugin and the prototyping playground as two projects. They should have been one from week one. The MCP layer is shared, the design-system context is shared, and the user is the same designer wearing two hats. Treating them as separate added a coordination tax I didn't need.
+
+I'd also be louder, earlier, about what *not* to automate. There's a temptation to let Claude take over the canvas — drag a layout in via prompt, regenerate the whole frame, ship it. That's the bad version of the tool. The good version keeps the designer in the loop on every decision and uses Claude for the parts that are mechanical. I had to learn to write that into the affordances themselves, not the docs.
+
+A through-line: I've been building designer tooling for a long time — see [LinkedIn design tooling](/work/linkedin-design-tooling) for the older arc, before Figma had Devmode and before MCP existed as a name for what we were already doing.

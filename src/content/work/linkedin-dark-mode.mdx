@@ -4,13 +4,10 @@ summary: "A two-year token migration that turned dark mode from a setting into i
 tags: ["design-systems", "color", "accessibility"]
 date: 2023-05-12
 featured: true
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "LinkedIn"
 period: "2021–2023"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Framing reads cleanly; Move + Outcome
-> need Luis's first-person account of the actual rollout strategy.
 
 Dark mode looks like a toggle and is actually a token rewrite. On a product the size of LinkedIn, "ship dark mode" means inventory every hardcoded hex in the codebase, decide what it *meant* semantically, and then thread a semantic token through enough surfaces that the toggle has somewhere to act.
 
@@ -20,24 +17,20 @@ Most "dark mode ship-it" failures aren't visual — they're organisational. The 
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+The semantic-token model came first. Every color in the codebase had to mean something — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — and the *value* of that token had to live in one place per mode. The naming mistake I rejected early was tokens named by the property they ended up on (`--color-button-bg`). Property-named tokens trap you in the next refactor. Semantic ones survive it.
 
-- The semantic-token model you landed on (and what you rejected)
-- The migration pattern that let teams ship dark-mode-correct surfaces incrementally
-- How you handled the long tail — illustrations, brand colours, third-party embeds — without blocking the launch
+The migration pattern was the harder problem. LinkedIn has hundreds of surfaces and the team owning each one has its own deadlines. I couldn't gate dark mode on every surface flipping at once; I also couldn't ship a half-dark product. The compromise: every surface kept its hex values until the semantic layer was wired in, at which point a single token swap turned the whole surface dark-mode-correct in one PR. Teams could schedule that swap when it fit; the central system kept publishing the semantic layer ahead of them.
+
+The long tail was illustrations, brand colors, and third-party embeds. We didn't try to make those *adaptive* — that's a different design problem — we made them *acceptable in either mode*. A lightweight fallback layer handled the embedded surfaces we didn't control: slightly desaturated treatments, mode-aware backgrounds where the artwork needed it, a sanctioned escape hatch for the colors that genuinely had to stay constant.
 
 ## Outcome
 
-*Skeleton — needs Luis's launch story:*
+The rollout was internal-first by design. Employees ran dark mode for weeks before any external user got it. That bought us the small-but-real bug list — the badge that read fine on white and disappeared on slate, the third-party embed with a hardcoded `#fff` background — and a clear picture of what *complete* meant. By the time we shipped externally, the long-tail bugs were in the changelog rather than in user reports.
 
-- Rollout sequence (geos, surfaces, employee dogfooding)
-- The internal-tools / docs work that made the token model legible to non-systems engineers
-- What the migration tally looked like when you called it complete
+The thing I'm most proud of isn't visible in the toggle. It's that semantic tokens kept paying off after dark mode shipped. The next brand refresh moved through the org in days, not months. A high-contrast variant slotted in on top of the same token layer. Dark mode stopped being a project and became infrastructure.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's retro:*
+I'd reorder one step. We tried to migrate component-level surfaces before getting the layout shells onto semantic tokens, and that meant some components shipped looking right on a still-hardcoded background — a regression that read as "the system isn't ready" even though it was. Layout shells first; components second.
 
-- The token I named wrong (and still regret)
-- A migration step you'd reorder
-- The thing about dual-mode design that production code makes obvious but design tools still hide
+I'd also push earlier on the gap between Figma color libraries and production semantics. Designers worked in named colors that didn't map cleanly to the token model — close enough that we shipped it, far enough that every handoff needed a translation pass. That should have been a single source of truth between the platforms. Which is exactly the work I went on to build — see [LinkedIn design tooling](/work/linkedin-design-tooling) for the tokens-as-source-of-truth repo that came out of this era, and [Superhuman design tooling](/work/superhuman-design-tooling) for where it's heading.

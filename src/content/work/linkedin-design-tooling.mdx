@@ -1,0 +1,44 @@
+---
+title: "LinkedIn — design tooling"
+summary: "Tokens as one source of truth across Web, Android, iOS, and Figma. A plugin that translated the canvas into code, and back. Years before Figma Devmode."
+tags: ["design-systems", "figma", "tokens", "tooling"]
+date: 2022-06-01
+featured: false
+role: "Frontend Engineer"
+company: "LinkedIn"
+period: "2020–2023"
+---
+
+The component library was the visible part of the design system. The tooling underneath was the part that made it stay coherent. Five artifacts, one through-line: keep the platforms in sync without asking anybody to remember.
+
+## Context
+
+LinkedIn at scale ships into Web, Android, iOS, and Figma. Every platform interprets the same color, the same spacing, the same component slightly differently, and the drift compounds. By 2020 the question wasn't whether to centralize — that ship had sailed — it was *what to centralize first*, and how to make the central definition the path of least resistance instead of the most.
+
+## Move
+
+I started with tokens. A single GitHub repo became the canonical source for every design token — color, spacing, typography, motion — and each consumer platform pulled from it: Web generated CSS variables, Android generated XML, iOS generated Swift, Figma generated library styles. One PR, four platforms updated, no manual reconciliation. The repo was boring on purpose; boring tooling is the kind that doesn't get forked.
+
+The Figma plugin came next, and it did one thing well: it serialized the UI tree of a selected frame into a format the rest of the tooling could read. Two consumers grew on top of that format.
+
+The first was a generic renderer that took the serialized tree and rendered live components in code — designers got a real preview against production data, not the static comp they'd designed against. The second was a code-snippet generator for the engineers inspecting the same Figma file. They could grab a component reference, its props, the token names, the structure — all sourced from the design system. This was *years* before Figma Devmode shipped.
+
+Once the Figma↔code translation existed in one direction, the reverse came almost for free. The plugin could push from code back into the canvas — keep a Figma file in sync with the components a product team had just updated, or stage a token change in Figma without leaving the design system repo. The bidirectionality is what turned the system from *publish-and-pray* into something teams could trust as a working surface.
+
+The chat-to-Figma generator was the experimental piece. Designers could describe a frame in a small chat UI — "a settings panel with a section for notifications, a toggle row, and a save action" — and the plugin would assemble it from system components. It wasn't trying to be a designer; it was trying to be a *fast first draft*, so the designer could start editing instead of starting from a blank canvas. The constraint that made it work: it could only use sanctioned components and tokens. Generative output stayed inside the system on rails.
+
+The QA plugin closed the loop. It traversed a Figma file and flagged anything that wasn't using a sanctioned token or component — the raw `#0073B1` instead of `--color-action-primary`, the bespoke spacing that should have been a system step, the rogue typography sample. It didn't block — it surfaced. Design review caught the rest.
+
+## Outcome
+
+The token-sync repo is the artifact I'm most proud of, and the one that probably got noticed least. It quietly removed a class of bug — "the dark-blue on iOS doesn't match the dark-blue on web" — that used to take a whole sprint to argue about. Once it was infrastructure, nobody had the argument anymore.
+
+The Figma plugin ended up being the canary for what tooling could be. By the time Figma shipped Devmode, our designers and engineers had been using a worse-looking, more-opinionated version of it for a couple of years. The lesson wasn't *we beat Figma* — it was that the *shape* of the right tool was discoverable from the design-system side, before the canvas vendor caught up.
+
+The chat-to-Figma experiment never became a product, but it became a thesis. It's the reason I'm building [Superhuman design tooling](/work/superhuman-design-tooling) the way I am — Claude on one side, system components on the other, designer in the middle.
+
+## What I'd do differently
+
+I'd ship the QA plugin first. It was the smallest piece and the one that taught the team the most: once designers saw their own work flagged against the system, the system became *theirs* rather than something the systems team imposed. Most of the resistance to the rest of the tooling went away in the few weeks after the QA plugin started showing up in design reviews. I had it built later than I should have because it felt like the unflashy piece.
+
+I'd also be more careful with the chat-to-Figma framing. We pitched it as a generator and it kept getting evaluated as one — *does the output look good enough to ship?* — when the actual value was first-draft velocity. A different name and a different demo would have set the right expectation and the experiment would have lived longer.
