@@ -26,6 +26,7 @@
   "hero.bio": "Design systems & AI experiments @ Superhuman and Grammarly. Before: design systems at LinkedIn, conversational UI at Amazon.",
   "hero.statPending": "graph syncing soon · interactive grid mounts on scroll",
   "hero.statTemplate": "{total} contributions · {streak} streak · synced {synced}",
+  "home.metaDescription": "Frontend engineer. Design systems and AI tooling for designers.",
   "home.recentWorkEyebrow": "recent work",
   "home.recentWorkTitle": "Three case studies",
   "home.readAllStudies": "read all case studies →"

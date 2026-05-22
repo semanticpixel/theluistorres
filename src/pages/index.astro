@@ -1,5 +1,13 @@
 ---
-import { getCollection } from "astro:content";
+/*
+ * Home page. Locale-aware: renders as the English home at `/`, or as the
+ * Spanish home at `/es` via a thin wrapper that passes `locale="es"`.
+ *
+ * Pattern matches the existing about.astro / colophon.astro wrappers, but
+ * this one ALSO localizes the body — the homepage has translated content
+ * in both bundles (hero.pitch, hero.bio, recent-work labels, stat line),
+ * so there's no fallback ribbon to render.
+ */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import Contributions from "~/components/Contributions.astro";
@@ -7,19 +15,26 @@ import ContributionsInteractive from "~/components/ContributionsInteractive.astr
 import HeroName from "~/components/HeroName.astro";
 import WorkCard from "~/components/WorkCard.astro";
 import Base from "~/layouts/Base.astro";
-import { t } from "~/lib/i18n";
+import { listWorkForLocale } from "~/lib/content";
+import { localePrefix, t, type Locale } from "~/lib/i18n";
 
-const locale = "en";
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = "en" } = Astro.props;
 
 /*
- * Featured work — limited to 3 entries marked `featured: true` in the
- * collection. The list is hand-curated via frontmatter rather than ranked
- * algorithmically; the home page is editorial space.
+ * Featured work — limited to 3 entries marked `featured: true`. Hand-curated
+ * via frontmatter; the home page is editorial space. `listWorkForLocale`
+ * resolves each entry to its translated version when available, falling
+ * back to English when not — same path /work and the case-study pages use.
  *
  * LinkedIn Coach surfaces here per ST-4's acceptance criteria.
  */
-const featured = (await getCollection("work", entry => entry.data.featured && !entry.data.draft))
-  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+const featured = (await listWorkForLocale(locale))
+  .filter(({ entry }) => entry.data.featured)
+  .sort((a, b) => b.entry.data.date.valueOf() - a.entry.data.date.valueOf())
   .slice(0, 3);
 
 /*
@@ -41,9 +56,16 @@ try {
 } catch (_) {
   /* pending first sync */
 }
+
+const statLine = stats && synced
+  ? t(locale, "hero.statTemplate")
+      .replace("{total}", stats.totalContributions.toLocaleString(locale))
+      .replace("{streak}", String(stats.streak))
+      .replace("{synced}", synced)
+  : null;
 ---
 
-<Base title="Luis Torres" description="Frontend engineer. Design systems and AI tooling for designers.">
+<Base title="Luis Torres" description={t(locale, "home.metaDescription")}>
   <main class="home">
     <section class="hero">
       <div class="hero__graph" aria-hidden="true">
@@ -56,13 +78,7 @@ try {
         <p class="hero__bio">{t(locale, "hero.bio")}</p>
         <p class="hero__stat">
           <span class="hero__stat-rule" aria-hidden="true">────</span>
-          {stats ? (
-            <span class="hero__stat-text">
-              {stats.totalContributions.toLocaleString()} contributions · {stats.streak} streak · synced {synced}
-            </span>
-          ) : (
-            <span class="hero__stat-text">graph syncing soon · interactive grid mounts on scroll</span>
-          )}
+          <span class="hero__stat-text">{statLine ?? t(locale, "hero.statPending")}</span>
         </p>
       </div>
     </section>
@@ -72,14 +88,14 @@ try {
     {featured.length > 0 && (
       <section class="home__work" aria-labelledby="featured-work-heading">
         <header class="home__work-head">
-          <p class="home__eyebrow">recent work</p>
-          <h2 id="featured-work-heading" class="home__work-title">Three case studies</h2>
+          <p class="home__eyebrow">{t(locale, "home.recentWorkEyebrow")}</p>
+          <h2 id="featured-work-heading" class="home__work-title">{t(locale, "home.recentWorkTitle")}</h2>
         </header>
         <div class="home__work-grid">
-          {featured.map(entry => <WorkCard entry={entry} />)}
+          {featured.map(({ entry }) => <WorkCard entry={entry} />)}
         </div>
         <p class="home__work-more">
-          <a href="/work">read all case studies →</a>
+          <a href={`${localePrefix(locale)}/work`}>{t(locale, "home.readAllStudies")}</a>
         </p>
       </section>
     )}
@@ -157,6 +173,10 @@ try {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
+    /* Spanish stat line is ~25% longer than English; wrap allowance prevents
+       the rule + text from overflowing on narrow viewports. Harmless when
+       content fits on one line (the English case). */
+    flex-wrap: wrap;
   }
 
   .hero__stat-rule {
