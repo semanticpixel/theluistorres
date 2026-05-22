@@ -4,7 +4,7 @@ summary: "El coach de carrera con IA: hacer que la IA generativa se sienta como 
 tags: ["ia", "design-systems", "product"]
 date: 2024-10-15
 featured: true
-role: "Frontend Engineer"
+role: "UI Tech Lead"
 company: "LinkedIn"
 period: "2023–2024"
 ---
@@ -17,11 +17,11 @@ En 2023 la mayoría de superficies "IA dentro del producto" se habían colapsado
 
 ## Movimiento
 
-La primera decisión fue estructural: esto no podía vivir en un sidebar de chat. El contrato de un sidebar con el usuario es *respondeme la pregunta* — y la mayoría de las preguntas de carrera no tienen respuestas, tienen preguntas de seguimiento. Defendí una superficie de coaching inline que vivía dentro del contexto del perfil del usuario, donde el primer movimiento del modelo era *acotar la pregunta* en lugar de responderla.
+Yo lideraba la UI/Frontend de la aplicación, y el trabajo se dividía limpiamente en dos problemas de infraestructura uno encima del otro: la superficie que ve el usuario, y la superficie en la que escribe el modelo. La mayoría de los equipos lanzando features de IA estaban tratándolas como un solo problema — *renderiza lo que sea que devuelva el modelo* — y obteniendo UIs que se leían como chatbots genéricos sin importar qué tan considerado fuera el modelo detrás. Argumenté que eran dos contratos distintos.
 
-El trabajo de voz fue la siguiente capa. El modelo se afinó para preguntar antes de responder, para sacar a la luz lo que no podía saber en lugar de adivinar, y para nunca usar las frases que delatan "atención al cliente con IA" (*con gusto te ayudo con eso*). Los coaches no se congracian. El system prompt hizo la mayor parte del trabajo; la UI se aseguró de que el bucle de preguntas tuviera dónde vivir.
+La superficie hacia el usuario tenía que sentirse como parte de LinkedIn, no atornillada al costado. Eso significaba un coach inline dentro del contexto del perfil del usuario — no un sidebar de chat — con un hilo de mensajes, indicadores de tipeo que no mintieran, un patrón de citas para cuando el modelo referenciaba algo que el usuario había escrito, y un estado elegante para cuando el modelo decidía que aún no tenía suficiente contexto. Las formas son familiares; el trabajo fue hacer que cohesionara como *una* superficie en lugar de tres.
 
-El trabajo de componentes que tuvo que aterrizar primero fue el hilo de mensajes en sí — indicadores de tipeo que no mintieran, un patrón de citas para cuando el modelo referenciaba algo que el usuario había escrito, y un estado elegante para cuando el modelo decidía que aún no tenía suficiente contexto. Nada de esto es novedoso aisladamente. El trabajo fue hacer que cohesionara como *una* superficie en lugar de tres.
+La superficie de output del LLM fue la capa más difícil. El modelo no podía devolver HTML arbitrario y la UI no podía renderizar prosa arbitraria — ambas direcciones rompen el contrato. Construimos un pequeño esquema de salida estructurada en el que el modelo escribía y desde el que la UI renderizaba: bloques de pregunta, prompts de seguimiento, referencias de citas, vías de escape. Una vez que el modelo conocía las formas con las que podía componer, el trabajo de voz — preguntá antes de responder, nunca uses las frases tipo *con gusto te ayudo con eso*, sacá a la luz lo que no sabés — tenía dónde vivir. Los coaches no se congracian. El system prompt hizo la mayor parte de ese trabajo; el esquema se aseguró de que la UI lo pudiera honrar.
 
 ## Resultado
 

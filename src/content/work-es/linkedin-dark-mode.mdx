@@ -4,7 +4,7 @@ summary: "Una migración de tokens de dos años que convirtió el modo oscuro de
 tags: ["design-systems", "color", "accesibilidad"]
 date: 2023-05-12
 featured: true
-role: "Frontend Engineer"
+role: "Tech Lead"
 company: "LinkedIn"
 period: "2021–2023"
 ---
@@ -17,9 +17,19 @@ La mayoría de los fallos de "lanzar modo oscuro" no son visuales — son organi
 
 ## Movimiento
 
-El modelo de tokens semánticos vino primero. Cada color en el código tenía que significar algo — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — y el *valor* de ese token tenía que vivir en un solo lugar por modo. El error de nombrado que descarté pronto fueron los tokens nombrados por la propiedad en la que terminaban (`--color-button-bg`). Los tokens nombrados por propiedad te atrapan en la siguiente refactorización. Los semánticos la sobreviven.
+La gente cree que el modo oscuro es fácil. Es una media query `prefers-color-scheme` y una segunda paleta. En una empresa donde cada equipo pillar es dueño de una parte de la aplicación, no lo es — es un cambio de mentalidad de años que toca cada PR.
 
-El patrón de migración fue el problema más difícil. LinkedIn tiene cientos de superficies y el equipo dueño de cada una tiene sus propios plazos. No podía gatillar el modo oscuro para que cada superficie hiciera flip al mismo tiempo; tampoco podía lanzar un producto a medio oscurecer. La salida: cada superficie conservaba sus valores hex hasta que la capa semántica estuviera cableada, momento en el que un solo swap de token hacía toda la superficie correcta en modo oscuro en un único PR. Los equipos podían programar ese swap cuando les calzara; el sistema central iba publicando la capa semántica por delante de ellos.
+El primer problema fue acostumbrar a la organización a pensar en semántica. Todos hablaban en *"hey, esto es `blue70`"* — pero en un mundo themable y consciente del esquema, `blue70` no significa nada. Es un valor hoja, no un contrato. El modelo de tokens que adopté fue estrictamente semántico — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — y el valor de ese token vivía en un solo lugar por modo. El error de nombrado que descarté pronto fueron los tokens nombrados por la propiedad en la que terminaban (`--color-button-bg`); los tokens nombrados por propiedad te atrapan en la siguiente refactorización, los semánticos la sobreviven. Conseguir que la gente *usara* el nuevo modelo requirió hosting de office hours, escribir documentación extensa, y aparecer en code reviews hasta que convertir `blue70` a `--color-action-primary` fuera hábito en lugar de pedido.
+
+El patrón de migración fue el siguiente problema. LinkedIn tiene cientos de superficies y el equipo dueño de cada una tiene sus propios plazos. No podía gatillar el modo oscuro para que cada superficie hiciera flip al mismo tiempo; tampoco podía lanzar un producto a medio oscurecer. La salida: cada superficie conservaba sus valores hex hasta que la capa semántica estuviera cableada, momento en el que un solo swap de token hacía toda la superficie correcta en modo oscuro en un único PR. Los equipos podían programar ese swap cuando les calzara; el sistema central iba publicando la capa semántica por delante de ellos.
+
+El tracking del tema fue la decisión que cargó con todo lo demás. Partes de la aplicación se cargaban dentro de iframes, lo que significaba que en cualquier momento necesitábamos saber dos cosas — la *opción* que el usuario había elegido, y el tema *actual* en el que la aplicación se estaba ejecutando:
+
+- *light* → fácil, el usuario eligió light
+- *dark* → fácil, el usuario eligió dark
+- *system* → el usuario eligió system, y el tema actual depende del SO
+
+Por el caso del iframe, deliberadamente me alejé del enfoque CSS-only `prefers-color-scheme` y construí la capa de tema sobre `matchMedia` — rastreábamos tanto la elección del usuario como la resolución viva del SO, y pasábamos un prop `theme` explícito a cada superficie embebida que no controlábamos del todo. CSS-only es elegante cuando sos dueño de toda la página; cuando la mitad de tus superficies son iframes, necesitás un valor que puedas pasar a través de la frontera.
 
 La cola larga fueron las ilustraciones, los colores de marca y los embeds de terceros. No intentamos hacer eso *adaptativo* — ese es un problema de diseño distinto — los hicimos *aceptables en cualquiera de los dos modos*. Una capa ligera de fallback se encargó de las superficies embebidas que no controlábamos: tratamientos ligeramente desaturados, fondos conscientes del modo donde el arte lo necesitaba, una vía de escape sancionada para los colores que de verdad tenían que quedarse constantes.
 

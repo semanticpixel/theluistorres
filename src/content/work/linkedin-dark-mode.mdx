@@ -4,7 +4,7 @@ summary: "A two-year token migration that turned dark mode from a setting into i
 tags: ["design-systems", "color", "accessibility"]
 date: 2023-05-12
 featured: true
-role: "Frontend Engineer"
+role: "Tech Lead"
 company: "LinkedIn"
 period: "2021–2023"
 ---
@@ -17,9 +17,19 @@ Most "dark mode ship-it" failures aren't visual — they're organisational. The 
 
 ## Move
 
-The semantic-token model came first. Every color in the codebase had to mean something — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — and the *value* of that token had to live in one place per mode. The naming mistake I rejected early was tokens named by the property they ended up on (`--color-button-bg`). Property-named tokens trap you in the next refactor. Semantic ones survive it.
+People think dark mode is easy. It's a `prefers-color-scheme` media query and a second palette. At a company where every pillar team owns part of the application, it isn't — it's a years-long mindset shift that touches every PR.
 
-The migration pattern was the harder problem. LinkedIn has hundreds of surfaces and the team owning each one has its own deadlines. I couldn't gate dark mode on every surface flipping at once; I also couldn't ship a half-dark product. The compromise: every surface kept its hex values until the semantic layer was wired in, at which point a single token swap turned the whole surface dark-mode-correct in one PR. Teams could schedule that swap when it fit; the central system kept publishing the semantic layer ahead of them.
+The first problem was getting the org used to thinking in semantics. Everyone was fluent in *"hey this is `blue70`"* — but in a themable, scheme-aware world `blue70` has no meaning. It's a leaf value, not a contract. The token model I landed on was strictly semantic — `--color-action-primary`, `--color-surface-elevated`, `--color-text-subtle` — and the value of that token lived in one place per mode. The naming mistake I rejected early was tokens named by the property they ended up on (`--color-button-bg`); property-named tokens trap you in the next refactor, semantic ones survive it. Getting people to *use* the new model took hosting office hours, writing extensive documentation, and showing up in code reviews until the conversion of `blue70` to `--color-action-primary` was a habit rather than a request.
+
+The migration pattern was the next problem. LinkedIn has hundreds of surfaces and the team owning each one has its own deadlines. I couldn't gate dark mode on every surface flipping at once; I also couldn't ship a half-dark product. The compromise: every surface kept its hex values until the semantic layer was wired in, at which point a single token swap turned the whole surface dark-mode-correct in one PR. Teams could schedule that swap when it fit; the central system kept publishing the semantic layer ahead of them.
+
+Theme tracking was the load-bearing decision underneath all of it. Parts of the application loaded inside iframes, which meant at any point we needed to know two things — the *option* the user had picked, and the *current* theme the application was actually running in:
+
+- *light* → easy, the user picked light
+- *dark* → easy, the user picked dark
+- *system* → the user picked system, and the current theme depends on the OS
+
+Because of the iframe case I deliberately moved *away* from a CSS-only `prefers-color-scheme` approach and built the theme layer on top of `matchMedia` — we tracked both the user's choice and the live OS resolution, and passed an explicit `theme` prop into every embedded surface we didn't fully control. CSS-only is elegant when you own the whole page; when half your surfaces are iframes, you need a value you can hand across the boundary.
 
 The long tail was illustrations, brand colors, and third-party embeds. We didn't try to make those *adaptive* — that's a different design problem — we made them *acceptable in either mode*. A lightweight fallback layer handled the embedded surfaces we didn't control: slightly desaturated treatments, mode-aware backgrounds where the artwork needed it, a sanctioned escape hatch for the colors that genuinely had to stay constant.
 

@@ -4,7 +4,7 @@ summary: "The AI career coach: making generative AI feel like a colleague, not a
 tags: ["ai", "design-systems", "product"]
 date: 2024-10-15
 featured: true
-role: "Frontend Engineer"
+role: "UI Tech Lead"
 company: "LinkedIn"
 period: "2023–2024"
 ---
@@ -17,11 +17,11 @@ By 2023 most "AI inside the product" surfaces had collapsed into either a sideba
 
 ## Move
 
-The first decision was structural: this couldn't live in a chat sidebar. A sidebar's contract with the user is *answer my question* — and most career questions don't have answers, they have follow-up questions. I argued for an inline coach surface that lived inside the user's profile context, with the model's first move being to *narrow the question* rather than respond to it.
+I was leading the UI/Frontend of the application, and the work split cleanly into two infrastructure problems sitting on top of each other: the surface the user sees, and the surface the model writes into. Most teams shipping AI features were treating those as one problem — *render whatever the model returns* — and getting back UIs that read as generic chatbots regardless of how thoughtful the model behind them was. I argued they were two distinct contracts.
 
-The voice work was the next layer. The model was tuned to ask before it answered, to surface what it couldn't know rather than guess, and to never use the phrases that signal "AI customer service" (*I'd be happy to help you with that*). Coaches don't ingratiate. The system prompt did most of the work; the UI made sure there was somewhere for the question-loop to live.
+The user-facing surface had to feel like part of LinkedIn, not bolted to the side. That meant an inline coach inside the user's profile context — not a chat sidebar — with a message thread, typing indicators that didn't lie, a citations pattern for when the model referenced something the user had written, and a graceful state for when the model decided it didn't have enough context yet. The shapes are familiar; the work was making them cohere as *one* surface instead of three.
 
-The component work that had to land first was the message thread itself — typing indicators that didn't lie, a citations pattern for when the model referenced something the user had written, and a graceful state for when the model decided it didn't have enough context yet. None of this is novel in isolation. The work was making it cohere as one surface instead of three.
+The LLM-output surface was the harder layer. The model couldn't return arbitrary HTML and the UI couldn't render arbitrary prose — both directions break the contract. We built a small structured-output schema the model wrote into and the UI rendered from: question blocks, follow-up prompts, citation references, escape hatches. Once the model knew the shapes it could compose with, the voice work — ask before you answer, never use the *I'd be happy to help you with that* phrases, surface what you don't know — had somewhere to live. Coaches don't ingratiate. The system prompt did most of that work; the schema made sure the UI could honor it.
 
 ## Outcome
 

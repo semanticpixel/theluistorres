@@ -4,9 +4,9 @@ summary: "A design system isn't components — it's the version of the codebase 
 tags: ["design-systems", "components", "documentation"]
 date: 2022-08-20
 featured: false
-role: "Frontend Engineer"
+role: "Design Engineer"
 company: "LinkedIn"
-period: "2020–2023"
+period: "2019–2025"
 ---
 
 The design system isn't the thing in the docs site. It's the version of the codebase your product engineers actually reach for at 4pm on a Friday when the deadline is Monday. Everything else — the components, the docs, the Figma library — is in service of that one moment.
@@ -17,7 +17,11 @@ LinkedIn at this scale has hundreds of engineers shipping into the same product.
 
 ## Move
 
-I picked the components to invest in by watching what teams reinvented. Buttons, dropdowns, dialogs, toasts, form inputs — the predictable five — got the deep treatment: composable APIs, slot patterns, accessibility wired through. Anything past that list, I deliberately left thinner. A documented utility class for spacing was worth more than a `<Spacer>` primitive that nobody would import.
+I used to be in the camp that a design system needs to be strict — fewer knobs, tighter constraints, the system's opinion wins. I've changed my mind across a career of watching what actually happens when a system is too strict: pillar teams quietly recreate components because they need to override a color, a font size, *one* thing — and you end up with three implementations of the same dropdown anyway. The strictness doesn't prevent the fork; it just hides it.
+
+So the thesis I built around was flexibility, not control. The system's job is to make the coherent choice cheaper than the bespoke one, which means giving teams real levers — themable components, themable sections, themable pages. At the end of the day every company is product-driven, and the product should be able to control the system rather than negotiate with it.
+
+I picked the components to invest in by watching what teams reinvented. Buttons, dropdowns, dialogs, toasts, form inputs — the predictable five — got the deep treatment: composable APIs, slot patterns, accessibility wired through, theming surfaces exposed where a pillar team needed to override without forking. Anything past that list, I deliberately left thinner. A documented utility class for spacing was worth more than a `<Spacer>` primitive that nobody would import.
 
 The contribution model was what kept the system from forking. Any product team could propose a new primitive — they didn't have to wait for our roadmap — but the proposal lived in our repo under a clear review path. Two outcomes were possible: the primitive got accepted and consolidated (and the proposing team stopped maintaining it), or it stayed in their product as a documented exception. The point was to give teams a *fast yes* path. Once you have that, the bespoke-fork problem mostly evaporates.
 
