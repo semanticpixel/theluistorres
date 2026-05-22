@@ -13,15 +13,23 @@ Code review was the bottleneck before coding agents. Now it's the bottleneck for
 
 ## Context
 
-A coding agent produces PRs at a rate that makes the old assumptions about review load wrong. The team I'm in is shipping more diffs than it has reviewer-hours to thoughtfully evaluate — and the obvious answer (review everything carefully) collapses into *review nothing carefully*, because attention degrades when the queue never drains. The wrong response is to add reviewers; that moves the bottleneck and burns out whoever happens to be senior on the rota.
+A coding agent produces PRs at a rate that makes the old assumptions about review load wrong. The team I'm in is shipping more diffs than it has reviewer-hours to thoughtfully evaluate — and the obvious answer (review everything carefully) collapses into *review nothing carefully*, because attention degrades when the queue never drains. The wrong response is to add reviewers; that moves the bottleneck and burns out whoever happens to be senior on the review rotation.
 
 The interesting response is to stop treating every PR as the same shape of work. Some PRs are routine — a copy tweak, a regenerated lockfile, a Storybook entry, a feature-flagged experiment scaffold — and they shouldn't require the same review depth as a refactor that touches a shared utility. Express Lane is the workflow that names that distinction and acts on it.
 
 ## Move
 
-The first iteration is deterministic. A small ruleset classifies every incoming PR before any human looks at it — by file paths touched, diff shape, author signal, CI gates passed — and PRs that match the auto-approval criteria skip the review queue entirely. The rules are intentionally conservative: a PR has to be *obviously* low-risk to fall into the express lane. The point isn't to maximize automation; it's to free reviewer attention for the changes that actually need it. {/* LUIS: list the specific v1 rules — file globs, diff size cap, label conventions, required CI checks — so this paragraph has teeth. */}
+The first iteration is deterministic. Every incoming PR passes through three rule categories before any human looks at it:
 
-The harder part wasn't writing the rules. It was getting the org to *trust* the lane. A team that's spent years treating every PR as a peer review checkpoint doesn't switch to "the bot approved it, ship it" overnight. I paired the v1 rollout with weekly audit reports — *here's what got auto-approved this week, here's each diff, here's the rule that matched* — so the team could see the lane operating against work they'd otherwise have reviewed themselves. Once the reports stopped surfacing surprises, the trust caught up. The audit is still running; the lane isn't a thing you ship and walk away from.
+- **Require** (all must pass): no security-sensitive paths touched, no security-sensitive content, the PR is not a draft, no disabled paths touched. If any of these fail, the PR exits the lane immediately and goes to human review.
+- **Auto-qualify** (any one bypasses the score): safe-files-only diffs, bot dependency updates, revert commits. These are the patterns that are *obviously* low-risk on their own, so a single match is enough to ship.
+- **Scored** (3 of 5 must pass, each configurable): title intent (a deliberately simple, easy-to-break check), small addition (max 50 lines, counting code only — noise files and generated artifacts don't count), single-directory change, deletions ≥ additions (cleanups are safer than additions), and author expertise on the touched files.
+
+PRs that clear the require gate and either auto-qualify *or* pass the score skip the review queue entirely. The rules are intentionally conservative: a PR has to be *obviously* low-risk to fall into the express lane. The point isn't to maximize automation; it's to free reviewer attention for the changes that actually need it.
+
+The harder part wasn't writing the rules. It was getting the org to *trust* the lane. A team that's spent years treating every PR as a peer review checkpoint doesn't switch to "the bot approved it, ship it" overnight. Before any PR actually got auto-approved, I ran v1 in dry-run mode for two weeks — same rules, same scoring, just no merge action. That gave us a real dataset to tune the defaults against, and gave the team a preview of exactly which PRs the lane *would have* approved if it were live. By the time we flipped the switch, the rules were calibrated to the actual shape of the team's work and the conversation was about *which threshold to nudge* rather than *should we even do this*.
+
+I also paired the live rollout with weekly audit reports — *here's what got auto-approved this week, here's each diff, here's the rule that matched* — so the team could keep seeing the lane operating against work they'd otherwise have reviewed themselves. Once the reports stopped surfacing surprises, the trust caught up. The audit is still running; the lane isn't a thing you ship and walk away from.
 
 The next iteration is where it gets interesting. Deterministic rules are a floor; they cover the obvious cases and leave the long tail where it's always been. The v2 move is a risk-assessment layer that scores every PR on what it touches — blast radius, code-path criticality, churn rate, test-coverage delta, the surface area of the public API touched — and routes it accordingly:
 
@@ -29,13 +37,13 @@ The next iteration is where it gets interesting. Deterministic rules are a floor
 - **Medium risk** → a quick AI code review with a focused checklist (regressions in critical paths, missing tests, schema-shape changes, accessibility regressions). The AI's notes land on the PR before the human opens it; human approval is still required, but they're reviewing *with* the AI's first pass, not from scratch.
 - **High risk** → human review, full stop, no AI shortcut.
 
-The point of the routing isn't to remove humans from review; it's to put them where their judgment matters most. {/* LUIS: confirm the v2 signal set above is accurate, and whether the AI-review tier is shipping with the v2 routing or as a follow-on. */}
+The point of the routing isn't to remove humans from review; it's to put them where their judgment matters most.
 
 ## Outcome
 
-{/* LUIS: drop in adoption numbers when shareable — PRs/week through the lane in Growth, reviewer-hours-saved estimate, the qualitative shift in how the team talks about review backlog. */}
+We're currently auto-approving **41% of PRs** in the Growth org, and that's the floor — the rules are conservative on purpose and the v2 risk layer is what gets the number higher without giving up the safety margin. 41% is the share of code review that *used* to land in a senior reviewer's queue and now doesn't.
 
-The shift I'm watching for isn't a number on a dashboard. It's that reviewers stop describing their day as *clearing the queue* and start describing it as *spending time on the changes that matter*. The queue isn't supposed to be the work. The judgment is the work; the queue is the inbox. Express Lane is the bet that the right ratio of automation to attention is achievable inside a single team, and that once it works in Growth, it generalizes to the rest of the org.
+The shift I'm watching for isn't a number on a dashboard, though. It's that reviewers stop describing their day as *clearing the queue* and start describing it as *spending time on the changes that matter*. The queue isn't supposed to be the work. The judgment is the work; the queue is the inbox. Express Lane is the bet that the right ratio of automation to attention is achievable inside a single team, and that once it works in Growth, it generalizes to the rest of the org.
 
 A second effect I didn't plan for: the rules themselves are a forcing function on the codebase. A PR that *should* be low-risk but doesn't match a rule reveals something — a file that should be a leaf but isn't, a code path that should be covered but isn't, a convention that's drifted. The lane's misses are a free audit of where the codebase has accumulated coupling, and the fixes pay for themselves twice — once in cleaner code, once in more PRs that qualify for the express path next quarter.
 
