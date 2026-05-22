@@ -1,6 +1,14 @@
 ---
 import Base from "~/layouts/Base.astro";
+import FallbackRibbon from "~/components/FallbackRibbon.astro";
 import Prose from "~/components/Prose.astro";
+import type { Locale } from "~/lib/i18n";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = "en" } = Astro.props;
 ---
 
 <Base
@@ -8,6 +16,7 @@ import Prose from "~/components/Prose.astro";
   description="Architecture decisions and rationale — every load-bearing call that shaped this site, written down."
   transitions={false}
 >
+  {locale !== "en" && <FallbackRibbon locale={locale} />}
   <main class="colophon">
     <Prose>
       <h1>Colophon</h1>
