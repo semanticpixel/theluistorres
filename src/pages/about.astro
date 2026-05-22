@@ -1,6 +1,14 @@
 ---
 import Base from "~/layouts/Base.astro";
+import FallbackRibbon from "~/components/FallbackRibbon.astro";
 import Prose from "~/components/Prose.astro";
+import type { Locale } from "~/lib/i18n";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = "en" } = Astro.props;
 
 const beliefs = [
   "A design system is a *negotiation*, not a deliverable.",
@@ -20,6 +28,7 @@ const timeline = [
 ---
 
 <Base title="About — Luis Torres" description="Frontend engineer. I write code that pretends not to be there.">
+  {locale !== "en" && <FallbackRibbon locale={locale} />}
   <main class="about">
     <Prose>
       <h1>About</h1>
