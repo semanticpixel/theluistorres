@@ -4,14 +4,10 @@ summary: "El coach de carrera con IA: hacer que la IA generativa se sienta como 
 tags: ["ia", "design-systems", "product"]
 date: 2024-10-15
 featured: true
-role: "Design Engineer"
+role: "UI Tech Lead"
 company: "LinkedIn"
 period: "2023–2024"
 ---
-
-> 📝 **Borrador de Claude — pendiente de revisión por Luis.** Encuadre desde conocimiento público.
-> Las secciones "Movimiento" + "Resultado" necesitan ediciones en primera persona
-> antes de que lean como la voz de Luis y no como un esqueleto genérico.
 
 LinkedIn lanzó un coach de carrera con IA. La pregunta interesante no era "¿podemos hacer que el modelo dé buenos consejos?" — la calidad del modelo no era el cuello de botella. La pregunta era: **¿qué se siente al pedirle consejos de carrera a una IA en una plataforma donde tu identidad profesional es el producto?**
 
@@ -21,24 +17,20 @@ En 2023 la mayoría de superficies "IA dentro del producto" se habían colapsado
 
 ## Movimiento
 
-*Esqueleto — necesita el relato en primera persona de Luis:*
+Yo lideraba la UI/Frontend de la aplicación, y el trabajo se dividía limpiamente en dos problemas de infraestructura uno encima del otro: la superficie que ve el usuario, y la superficie en la que escribe el modelo. La mayoría de los equipos lanzando features de IA estaban tratándolas como un solo problema — *renderiza lo que sea que devuelva el modelo* — y obteniendo UIs que se leían como chatbots genéricos sin importar qué tan considerado fuera el modelo detrás. Argumenté que eran dos contratos distintos.
 
-- ¿Qué decisión de diseño separó esto de "un chatbot lateral"?
-- ¿Cómo ajustaste la voz del modelo / patrón de preguntas para que leyera como un coach y no como un buscador?
-- ¿Qué trabajo de sistema de componentes tuvo que aterrizar primero para que la superficie fuera coherente a escala?
+La superficie hacia el usuario tenía que sentirse como parte de LinkedIn, no atornillada al costado. Eso significaba un coach inline dentro del contexto del perfil del usuario — no un sidebar de chat — con un hilo de mensajes, indicadores de tipeo que no mintieran, un patrón de citas para cuando el modelo referenciaba algo que el usuario había escrito, y un estado elegante para cuando el modelo decidía que aún no tenía suficiente contexto. Las formas son familiares; el trabajo fue hacer que cohesionara como *una* superficie en lugar de tres.
+
+La superficie de output del LLM fue la capa más difícil. El modelo no podía devolver HTML arbitrario y la UI no podía renderizar prosa arbitraria — ambas direcciones rompen el contrato. Construimos un pequeño esquema de salida estructurada en el que el modelo escribía y desde el que la UI renderizaba: bloques de pregunta, prompts de seguimiento, referencias de citas, vías de escape. Una vez que el modelo conocía las formas con las que podía componer, el trabajo de voz — preguntá antes de responder, nunca uses las frases tipo *con gusto te ayudo con eso*, sacá a la luz lo que no sabés — tenía dónde vivir. Los coaches no se congracian. El system prompt hizo la mayor parte de ese trabajo; el esquema se aseguró de que la UI lo pudiera honrar.
 
 ## Resultado
 
-*Esqueleto — necesita las métricas y titulares de Luis:*
+Lo que me llevé: las superficies de consejo y las superficies de respuesta quieren andamios distintos. Una superficie de respuesta optimiza para velocidad-de-resolución; una superficie de consejo optimiza para *calidad de la pregunta de vuelta*. El equipo cargó esa distinción a la siguiente ronda de features de IA, y el instinto del chat-sidebar dejó de ganar por defecto.
 
-- Números de engagement / retención desde el lanzamiento
-- Lo que el equipo aprendió sobre superficies de consejo vs. superficies de respuesta
-- Cambios aguas abajo en otras features de IA del producto
+La otra cosa que se quedó: la superficie de IA se ganó su lugar dentro del chrome del producto en lugar de estar pegada al costado. Una vez que el coach vivió en la misma superficie que el perfil del usuario, dejó de ser "la cosa de IA" y empezó a ser parte de cómo funciona el producto. Ese reencuadre importó más que cualquier interacción que hayamos lanzado.
 
 ## Qué haría diferente
 
-*Esqueleto — necesita la retrospectiva honesta de Luis:*
+Empujaría con más fuerza para no lanzar el coach sin una vía de escape explícita hacia "solo dame la respuesta". Algunos usuarios — usualmente los que tenían el contexto más específico — querían cortocircuitar el bucle de preguntas, y la superficie no se los permitía. Una pequeña affordance ("saltarse las preguntas") habría respetado a esos usuarios sin comprometer el patrón de coaching para el resto.
 
-- Lo que empujaría con más fuerza, en retrospectiva
-- El patrón de este proyecto que debió generalizarse más rápido al resto del producto
-- Lo que aprendí sobre trabajar con equipos de modelos en superficies donde el *estilo* del modelo importa tanto como su precisión
+También arrancaría la conversación con el equipo del modelo sobre *voz* en la semana uno, no en la seis. El estilo no es una pasada de pulido encima de un modelo preciso — es una restricción que da forma a qué evals corres y qué ejemplos usas para entrenar. Tratarlo como problema de diseño en lugar de problema editorial habría ahorrado una ronda de rework.

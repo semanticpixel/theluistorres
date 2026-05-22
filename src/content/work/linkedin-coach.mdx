@@ -4,14 +4,10 @@ summary: "The AI career coach: making generative AI feel like a colleague, not a
 tags: ["ai", "design-systems", "product"]
 date: 2024-10-15
 featured: true
-role: "Design Engineer"
+role: "UI Tech Lead"
 company: "LinkedIn"
 period: "2023–2024"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Public-knowledge framing only.
-> The "Move" + "Outcome" sections need first-person edits before they read as
-> Luis's voice rather than a generic case-study skeleton.
 
 LinkedIn shipped an AI career coach. The interesting question wasn't "can we get the model to give good advice" — model quality wasn't the bottleneck. The question was: **what does it feel like to ask an AI for career advice on a platform where your professional identity is the product?**
 
@@ -21,24 +17,20 @@ By 2023 most "AI inside the product" surfaces had collapsed into either a sideba
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+I was leading the UI/Frontend of the application, and the work split cleanly into two infrastructure problems sitting on top of each other: the surface the user sees, and the surface the model writes into. Most teams shipping AI features were treating those as one problem — *render whatever the model returns* — and getting back UIs that read as generic chatbots regardless of how thoughtful the model behind them was. I argued they were two distinct contracts.
 
-- What design decision separated this from "a chat sidebar"?
-- How did you tune the model's voice / question pattern so it read as a coach rather than a search engine?
-- What component-system work needed to land first to make the surface coherent at scale?
+The user-facing surface had to feel like part of LinkedIn, not bolted to the side. That meant an inline coach inside the user's profile context — not a chat sidebar — with a message thread, typing indicators that didn't lie, a citations pattern for when the model referenced something the user had written, and a graceful state for when the model decided it didn't have enough context yet. The shapes are familiar; the work was making them cohere as *one* surface instead of three.
+
+The LLM-output surface was the harder layer. The model couldn't return arbitrary HTML and the UI couldn't render arbitrary prose — both directions break the contract. We built a small structured-output schema the model wrote into and the UI rendered from: question blocks, follow-up prompts, citation references, escape hatches. Once the model knew the shapes it could compose with, the voice work — ask before you answer, never use the *I'd be happy to help you with that* phrases, surface what you don't know — had somewhere to live. Coaches don't ingratiate. The system prompt did most of that work; the schema made sure the UI could honor it.
 
 ## Outcome
 
-*Skeleton — needs Luis's metrics and headlines:*
+What I took away: advice surfaces and answer surfaces want different scaffolding. An answer surface optimizes for speed-to-resolution; an advice surface optimizes for *quality of question asked back*. The team carried that distinction into the next round of AI features, and the chat-sidebar instinct stopped winning by default.
 
-- Engagement / retention numbers from the launch
-- What the team learned about advice surfaces vs. answer surfaces
-- Downstream changes to other AI features in the product
+The other thing that stuck: the AI surface earned its place inside the product chrome rather than tacked on next to it. Once the coach lived in the same surface as the user's profile, it stopped being "the AI thing" and started being part of how the product works. That re-frame mattered more than any single interaction we shipped.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's honest retrospective:*
+I'd push back harder on shipping the coach without an explicit escape hatch into "just give me the answer." Some users — usually the ones with the most specific context — wanted the question loop short-circuited, and the surface didn't let them. A small affordance ("skip the questions") would have respected those users without compromising the coaching pattern for the rest.
 
-- The thing I'd push back on harder, in hindsight
-- The pattern from this project that should have generalised faster across the rest of the product
-- What I learned about working with model teams on surfaces where the model's *style* matters as much as its accuracy
+I'd also start the conversation with the model team about *voice* in week one, not week six. Style isn't a finishing pass on top of an accurate model — it's a constraint that shapes which evals you run and which examples you train on. Treating it as a design problem instead of an editorial one would have saved a round of rework.

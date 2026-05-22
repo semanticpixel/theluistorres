@@ -2,16 +2,12 @@
 title: "Grammarly AI Detector — early experiments"
 summary: "Designing the UX for 'is this text AI-generated?' when the answer is statistical, not absolute."
 tags: ["ai", "ux", "prototyping"]
-date: 2023-11-05
+date: 2026-01-15
 featured: false
-role: "Design Engineer"
+role: "Frontend Engineer"
 company: "Grammarly"
-period: "2023"
+period: "2026–present"
 ---
-
-> 📝 **Claude draft — pending Luis's review.** Public-information framing.
-> Luis's specific contribution + the design decisions worth highlighting
-> need a first-person rewrite.
 
 The hard part of an AI detector isn't the model. It's the UI for *"probably."* Users want a yes/no; the model gives a confidence band; product needs both honesty and decisiveness. Resolving that gap is a design problem before it's an ML one.
 
@@ -21,24 +17,26 @@ In 2023 every writing surface was figuring out the same question: when AI-genera
 
 ## Move
 
-*Skeleton — needs Luis's first-person account:*
+I'm on the Growth team running experiments to bring awareness to AI Detector. The detector itself is a model decision; the *demand* for the detector is a design and frontend problem. My job is the second one — figure out which surfaces, which gestures, which signals get a writer to install the extension and treat the detector as part of how they review their own work. Three experiments stand out so far.
 
-- The presentation pattern you landed on (and the ones you ruled out)
-- How you handled the false-positive case in the UI — without burying the signal
-- The interaction model for "I disagree with this score"
+The first is a personalized in-browser banner that encourages writers to install the extension at the moment the detector would be most useful — when they're reviewing a draft, not when they land on the marketing page. The banner pulls a small amount of context (what surface they're on, what they're doing) and tailors the message accordingly, so it reads as *useful to you right now* rather than *here's an ad for our product*.
+
+The second is animating UI elements to signal that the active text reads as at least 30% AI-generated. The animation is subtle on purpose — a soft pulse on the relevant chrome, not a label slapped over the writing — and it does the work of *bringing attention* without doing the work of *making the call*. The reader does the call; the UI just makes sure the signal is hard to miss.
+
+The third is the UX for free scans. A first-time user runs the detector and gets a structured preview: which sentences scored highest, why the band shape looks the way it does, what a full scan would surface across the rest of the document. The free scan doesn't unlock everything — it teases the *shape* of the value, in the user's own writing, so the value is concrete before the install decision lands.
+
+Underneath all three is a presentation pattern I've been pushing: *probability band over verdict*. The detector doesn't say "this is AI-generated" — it says "this passage reads more like AI-generated text than the rest of your draft." The band has a confidence range and a contextual frame, because a number without a reference is a guess in a uniform. Binary labels generate false accusations; heat maps lock in a single threshold. The band keeps the user's judgment in the loop.
+
+False positives get their own treatment. When the detector flags something it shouldn't, the writer can mark it as such — and the UI changes shape, not just state. The flag turns into a soft *noted* affordance with the score dimmed but visible; nothing snaps back to "no, you're wrong." The detector stops insisting and the user stays in charge of the writing.
 
 ## Outcome
 
-*Skeleton — needs Luis's notes:*
+The thread running through the experiments — the one I didn't expect — is that *honesty outperforms decisiveness* in growth surfaces too, not just product ones. The banner that named what the writer was looking at outperformed the banner that pitched the product. The animation that pointed quietly outperformed the animation that announced. The free scan that showed the *shape* of the answer outperformed the free scan that promised the answer. Across three surfaces, the version that respected the reader's judgment moved more installs than the version that tried to overwhelm it.
 
-- Internal user research insights worth surfacing
-- The pattern that generalised to other Grammarly AI surfaces
-- The decision that didn't ship and why
+The pattern that's generalizing inside the team is *probability band over verdict* — the same idea I've been pushing on the detector surface itself. Once the team saw the band perform in product, the marketing-side experiments started reaching for the same vocabulary instead of reinventing tone per surface. The visual and verbal language carries between the two sides.
 
 ## What I'd do differently
 
-*Skeleton — needs Luis's retro:*
+I'd treat the three experiments as one system from the start, not three independent tests. The banner, the in-document animation, and the free-scan UX share the same vocabulary and the same decision the writer is making — and there's a coherent install funnel hiding underneath them that I'm only now starting to see whole. The next round wants a unified instrumentation layer so the question is *which combination wins* rather than *which surface wins*.
 
-- The visual encoding you'd change
-- The threshold conversation you'd reopen with the model team
-- The cross-functional pattern you'd push for earlier
+I'd also push for tying the threshold logic to model versioning earlier. We've calibrated copy around scores that the model behind them keeps shifting. When the calibration ships with the weights — same release, same artifact — the growth surface stops drifting out from under the detector.
