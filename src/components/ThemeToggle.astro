@@ -39,14 +39,21 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
 </button>
 
 <script>
+  /*
+   * Re-wires on every astro:page-load — module scripts run once for the
+   * session, but ClientRouter swaps the document on navigation, leaving the
+   * post-swap button as a fresh node with no click listener and no
+   * data-current attribute (so it visually reverts to "auto" and stops
+   * responding). astro:page-load fires on the initial load *and* after
+   * every transition, so a single handler covers both cases.
+   *
+   * The document-level listener itself is attached once and persists across
+   * swaps; only the inner DOM lookups + click wiring need to repeat.
+   */
   type ThemeChoice = "auto" | "light" | "dark";
 
   const KEY = "theme";
   const ORDER: ThemeChoice[] = ["auto", "light", "dark"];
-
-  const root = document.documentElement;
-  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
-  const label = document.querySelector<HTMLElement>("[data-theme-label]");
 
   function read(): ThemeChoice {
     try {
@@ -56,32 +63,41 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
     return "auto";
   }
 
-  function apply(choice: ThemeChoice) {
-    if (choice === "auto") {
-      delete root.dataset.theme;
-      try { localStorage.removeItem(KEY); } catch (_) {}
-    } else {
-      root.dataset.theme = choice;
-      try { localStorage.setItem(KEY, choice); } catch (_) {}
-    }
-    if (label && button) {
-      const localized = button.getAttribute(`data-theme-label-${choice}`) ?? choice;
-      label.textContent = localized;
-      /* Keep aria-label in sync with the visible state so the accessible
-       * name contains the visible text (axe label-content-name-mismatch). */
-      const base = button.getAttribute("data-theme-label-aria") ?? "theme";
-      button.setAttribute("aria-label", `${base}: ${localized}`);
-    }
-    button?.setAttribute("data-current", choice);
+  function init() {
+    const root = document.documentElement;
+    const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+    const label = document.querySelector<HTMLElement>("[data-theme-label]");
+    if (!button) return;
+
+    const apply = (choice: ThemeChoice) => {
+      if (choice === "auto") {
+        delete root.dataset.theme;
+        try { localStorage.removeItem(KEY); } catch (_) {}
+      } else {
+        root.dataset.theme = choice;
+        try { localStorage.setItem(KEY, choice); } catch (_) {}
+      }
+      if (label) {
+        const localized = button.getAttribute(`data-theme-label-${choice}`) ?? choice;
+        label.textContent = localized;
+        /* Keep aria-label in sync with the visible state so the accessible
+         * name contains the visible text (axe label-content-name-mismatch). */
+        const base = button.getAttribute("data-theme-label-aria") ?? "theme";
+        button.setAttribute("aria-label", `${base}: ${localized}`);
+      }
+      button.setAttribute("data-current", choice);
+    };
+
+    apply(read());
+
+    button.addEventListener("click", () => {
+      const current = read();
+      const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
+      apply(next);
+    });
   }
 
-  apply(read());
-
-  button?.addEventListener("click", () => {
-    const current = read();
-    const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
-    apply(next);
-  });
+  document.addEventListener("astro:page-load", init);
 </script>
 
 <style>
