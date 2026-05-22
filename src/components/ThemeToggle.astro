@@ -44,11 +44,14 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
    * session, but ClientRouter swaps the document on navigation, leaving the
    * post-swap button as a fresh node with no click listener and no
    * data-current attribute (so it visually reverts to "auto" and stops
-   * responding). astro:page-load fires on the initial load *and* after
-   * every transition, so a single handler covers both cases.
+   * responding). astro:page-load fires after every transition.
    *
-   * The document-level listener itself is attached once and persists across
-   * swaps; only the inner DOM lookups + click wiring need to repeat.
+   * astro:page-load is *not* a native event — it's emitted by ClientRouter.
+   * Pages that opt out of View Transitions (Base.astro `transitions={false}`)
+   * don't load the runtime, so we also run init on DOMContentLoaded /
+   * synchronously when the DOM is already ready. The click binding is
+   * guarded against double-wiring on transition-enabled initial loads where
+   * both paths fire.
    */
   type ThemeChoice = "auto" | "light" | "dark";
 
@@ -90,6 +93,8 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
 
     apply(read());
 
+    if (button.dataset.themeToggleBound) return;
+    button.dataset.themeToggleBound = "1";
     button.addEventListener("click", () => {
       const current = read();
       const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
@@ -97,6 +102,11 @@ const { locale = (Astro.currentLocale as Locale | undefined) ?? "en" } = Astro.p
     });
   }
 
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
   document.addEventListener("astro:page-load", init);
 </script>
 
