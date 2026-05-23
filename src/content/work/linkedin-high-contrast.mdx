@@ -1,0 +1,48 @@
+---
+title: "LinkedIn High Contrast Mode"
+summary: "Adding Windows High Contrast Mode support to LinkedIn — the third theme the design system never had to relearn."
+tags: ["design-systems", "accessibility", "color"]
+date: 2024-02-01
+featured: false
+draft: true
+role: "Tech Lead"
+company: "LinkedIn"
+period: "[TK Luis: 2023–2024?]"
+---
+
+If [dark mode](/work/linkedin-dark-mode) was a token rewrite disguised as a toggle, High Contrast Mode was the receipt that proved the token rewrite was worth it. The semantic layer that shipped for dark mode was supposed to absorb additional themes for free. HCM was the test.
+
+## Context
+
+Windows High Contrast Mode (now called Contrast Themes) isn't a preference — it's an assistive technology. The user has chosen a color set their OS guarantees they can read, and the browser hands you exactly one signal to respect it: `forced-colors: active`. When that media query is true, the browser overrides your colors with the system palette. Borders, text, links, focus rings — everything you'd normally color is now drawn from a small set of system color keywords: `Canvas`, `CanvasText`, `LinkText`, `ButtonText`, `Highlight`.
+
+The way most product teams encounter this is as a regression report: *"the button is invisible in High Contrast Mode."* What's actually happening is that the browser stripped your hand-tuned `box-shadow` border treatment, your background-color affordance, your hover state — and what's left is text on a transparent surface with no shape. The fix isn't a one-off; it's a discipline you have to bake into every component.
+
+[TK Luis: was this kicked off by a specific compliance milestone, an enterprise customer ask, or a proactive a11y push? One sentence on what triggered the work helps frame the urgency.]
+
+## Move
+
+The leverage move was the same one [dark mode](/work/linkedin-dark-mode) had earned us — the semantic token layer. `--color-action-primary` already existed; it already meant "the color a primary action wears." Adding HCM meant giving it a third resolution alongside light and dark: under `forced-colors: active`, that token resolves to a system color keyword.
+
+The pattern, applied across the system:
+
+- **Borders are load-bearing.** A button's affordance in HCM is its border, not its background. Every interactive primitive picked up a `border: 1px solid ButtonText` declaration that was effectively invisible in normal modes (the existing background did the work) but became the entire shape in HCM.
+- **`forced-color-adjust: none` is a scalpel, not a hammer.** The temptation when something looks wrong is to opt out — `forced-color-adjust: none` tells the browser "leave my colors alone." That's correct for brand artwork (logos, illustrations) and incorrect for everything else. The rule we settled on: opt out only when the user's color set would actively break the meaning of the element.
+- **System keywords beat hex fallbacks every time.** `LinkText` will always be readable on `Canvas`, because the user picked them as a pair. Any hex I substituted would only be right for the high-contrast pairs I had tested.
+- **Focus rings need to be drawn, not implied.** A `box-shadow` focus ring disappears under `forced-colors: active`. A real `outline` does not. Every focus state migrated from shadow to outline at the same time HCM landed — a side benefit that also helped low-vision users on every other mode.
+
+[TK Luis: the specific surfaces / components you led — buttons, navigation, modals, the feed? A 1-2 sentence anecdote about one component where the HCM pass surfaced a latent bug in another mode would land well here.]
+
+The migration shape mirrored dark mode's: the semantic layer published the new resolutions ahead of teams, and each team could swap on their own cadence. Because HCM uses the same tokens, no team had to re-author values — they just had to add the border declarations and migrate their focus rings. The cross-cutting changes I owned centrally; the per-surface adoption ran on the same office-hours + code-review cadence that had worked for dark mode.
+
+## Outcome
+
+[TK Luis: what shipped? "HCM support across the core surfaces by X date" / "covered N components" / "zero a11y violations on Windows High Contrast in the next compliance audit"]
+
+The thing I'm most proud of isn't the HCM support itself — it's that adding a third theme cost a fraction of what dark mode did. The token layer wasn't just an investment in dark mode; it was an investment in *every future theme*. The next one — a high-contrast variant for low-vision users on macOS via [Increased Contrast](https://support.apple.com/guide/mac-help/change-display-settings-for-accessibility-mchl0c2c84a4/mac), or a print theme, or a kiosk theme — would slot in the same way.
+
+## What I'd do differently
+
+I'd push for `prefers-contrast: more` support at the same time, not as a follow-up. `forced-colors: active` and `prefers-contrast: more` are different signals — one is the OS overriding your palette, the other is a user asking for a higher-contrast version of *your* palette. We treated them as the same problem at first, then had to untangle them. They share token vocabulary but solve different things, and the docs would have been clearer if we'd named that distinction up front.
+
+I'd also have invested in tooling earlier — a dev panel that toggles `forced-colors: active` in real time, the way browsers eventually shipped emulation for `prefers-color-scheme`. Building that ourselves (Chrome shipped it natively shortly after) would have shaved months off the test cycle. The shape of that tooling is what informed the [design tooling work](/work/linkedin-design-tooling) I went on to lead — `forced-colors` was the use case that made me believe a token-aware preview surface was load-bearing infrastructure, not a nice-to-have.
