@@ -63,6 +63,15 @@ const statLine = stats && synced
       .replace("{streak}", String(stats.streak))
       .replace("{synced}", synced)
   : null;
+
+/*
+ * Tools-shipped count for the secondary stat line. Source of truth is the
+ * <dl class="colophon__tooling"> in src/pages/colophon.astro §9; update both
+ * when adding or removing a public tool repo. Kept as a literal to avoid
+ * pulling the colophon markup into a data module for a single integer.
+ */
+const toolsCount = 7;
+const toolsStat = t(locale, "hero.toolsStat").replace("{count}", String(toolsCount));
 ---
 
 <Base title="Luis Torres" description={t(locale, "home.metaDescription")}>
@@ -79,6 +88,12 @@ const statLine = stats && synced
         <p class="hero__stat">
           <span class="hero__stat-rule" aria-hidden="true">────</span>
           <span class="hero__stat-text">{statLine ?? t(locale, "hero.statPending")}</span>
+        </p>
+        <p class="hero__stat">
+          <span class="hero__stat-rule" aria-hidden="true">────</span>
+          <span class="hero__stat-text">
+            {toolsStat} · <a href={`${localePrefix(locale)}/colophon#ai-powered-tooling`}>{t(locale, "hero.toolsLinkText")}</a>
+          </span>
         </p>
       </div>
     </section>
@@ -181,6 +196,17 @@ const statLine = stats && synced
 
   .hero__stat-rule {
     color: var(--color-text-subtle);
+  }
+
+  .hero__stat a {
+    color: var(--color-action);
+    text-decoration: none;
+  }
+
+  .hero__stat a:hover,
+  .hero__stat a:focus-visible {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
   }
 
   /* Entrance — name, pitch, bio, stat-line fade up on a staggered cadence. */
