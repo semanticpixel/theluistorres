@@ -1,0 +1,35 @@
+/*
+ * Motion + accessibility atoms.
+ *
+ * .sr-only      — visually hide an element while keeping it in the a11y tree.
+ * .motion-safe  — children with this class only animate when the user has
+ *                 NOT requested reduced motion. Pair with your animation
+ *                 declaration; the atom only opts in, it does not declare.
+ */
+
+.sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.not-sr-only {
+  position: static;
+  inline-size: auto;
+  block-size: auto;
+  padding: 0;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe { animation: none !important; transition: none !important; }
+}
