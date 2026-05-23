@@ -6,5 +6,6 @@
 @import "./theme/typography.css" layer(theme);
 @import "./theme/space.css" layer(theme);
 @import "./theme/motion.css" layer(theme);
+@import "./theme/elevation.css" layer(theme);
 @import "./theme/fonts.css" layer(theme);
 @import "./base.css" layer(base);
