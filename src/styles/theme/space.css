@@ -16,11 +16,6 @@
   --space-10: 8rem;    /* 128 */
   --space-11: 12rem;   /* 192 */
 
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 16px;
-  --radius-pill: 9999px;
-
   --container-narrow: 36rem;
   --container-prose:  44rem;
   --container-wide:   72rem;
