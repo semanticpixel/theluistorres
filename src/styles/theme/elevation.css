@@ -1,9 +1,24 @@
 /*
- * Elevation tokens. Soft, dual-mode shadows via light-dark() so a single
- * declaration handles both schemes. Use sparingly — the system leans flat.
+ * Elevation tokens. Shadows derive from a single semantic --color-shadow
+ * and a strength scale, so each shadow layers the same hue at different
+ * alphas and stays tunable from one knob. Use sparingly — the system
+ * leans flat.
  */
 
 :root {
-  --shadow-sm: 0 1px 2px light-dark(rgb(0 0 0 / 0.06), rgb(0 0 0 / 0.4));
-  --shadow-md: 0 8px 24px -8px light-dark(rgb(0 0 0 / 0.12), rgb(0 0 0 / 0.6));
+  --color-shadow: light-dark(hsl(220 3% 15%), hsl(220 40% 2%));
+
+  --shadow-strength: 1%;
+  --shadow-strength-3: calc(var(--shadow-strength) + 2%);
+  --shadow-strength-4: calc(var(--shadow-strength) + 3%);
+  --shadow-strength-5: calc(var(--shadow-strength) + 4%);
+  --shadow-strength-6: calc(var(--shadow-strength) + 5%);
+  --shadow-strength-7: calc(var(--shadow-strength) + 6%);
+  --shadow-strength-8: calc(var(--shadow-strength) + 7%);
+  --shadow-strength-10: calc(var(--shadow-strength) + 9%);
+
+  --shadow-sm: 0 1px 2px -1px hsl(from var(--color-shadow) h s l / var(--shadow-strength-10));
+  --shadow-md:
+    0 3px 5px -2px hsl(from var(--color-shadow) h s l / var(--shadow-strength-4)),
+    0 7px 14px -5px hsl(from var(--color-shadow) h s l / var(--shadow-strength-6));
 }
