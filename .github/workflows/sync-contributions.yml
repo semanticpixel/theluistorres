@@ -1,7 +1,13 @@
 name: Sync GitHub contributions
 
-# Nightly run + manual trigger. Cron is 08:13 UTC (offset off :00 to play nice
-# with GitHub Actions scheduler load).
+# Nightly run + manual trigger. Cron fires at 08:13 UTC daily.
+#
+# Why :13 instead of :00 — GitHub's scheduler is busiest at the top of every
+# hour (the most-common cron minute by far). Workflows queued in that peak
+# can be delayed 5–15 min; picking a non-round minute lands in a less-
+# contested slot for more predictable execution time. Round quarter-hours
+# (:00 :15 :30 :45) are the next-most-popular and worth avoiding too.
+# See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
 #
 # Flow: fetch contributions → if data changed, open a PR with auto-merge.
 # Branch protection on master blocks direct pushes, so the bot routes through
