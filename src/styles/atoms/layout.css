@@ -1,7 +1,7 @@
 /*
  * Layout atoms. Composable flex/grid primitives + width containers.
- * Each accepts a per-instance gap override via a scoped custom prop —
- * e.g. <div class="column" style="--column-gap: var(--space-3)"> .
+ * Gap is opt-in at the call site — atoms ship without a default gap so
+ * consumers don't have to "undo" one they didn't ask for.
  *
  * Lives in the `atoms` layer so utility overrides on a component instance
  * always win without specificity gymnastics.
@@ -10,35 +10,20 @@
 .column {
   display: flex;
   flex-direction: column;
-  gap: var(--column-gap, var(--space-5));
 }
 
 .row {
   display: flex;
   flex-direction: row;
-  gap: var(--row-gap, var(--space-4));
-}
-
-.cluster {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--cluster-gap, var(--space-3));
 }
 
 .grid {
   display: grid;
-  gap: var(--grid-gap, var(--space-5));
 }
 
 .grid-auto-fit {
   display: grid;
-  gap: var(--grid-gap, var(--space-5));
   grid-template-columns: repeat(auto-fit, minmax(var(--min-col, 16rem), 1fr));
-}
-
-.center {
-  display: grid;
-  place-items: center;
 }
 
 .flex { display: flex; }
