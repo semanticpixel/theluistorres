@@ -9,40 +9,39 @@ name: Sync GitHub contributions
 # (:00 :15 :30 :45) are the next-most-popular and worth avoiding too.
 # See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
 #
-# Flow: fetch contributions → if data changed, open a PR with auto-merge.
-# Branch protection on master blocks direct pushes, so the bot routes through
-# the same review gate as human PRs. CI runs on the PR; once green, GitHub
-# squash-merges and auto-deletes the branch. deploy-pages.yml fires on the
-# merged-PR event and rebuilds the site.
+# Flow: fetch contributions → if data changed, commit + push directly to
+# master. Branch protection on master requires CI checks for human pushes,
+# but SYNC_PAT (yours, admin) bypasses that via the existing admin rule.
+# PAT-driven push fires deploy-pages's push trigger normally — no PR queue,
+# no daily noise, no CI gate on a data-only change.
 on:
   schedule:
     - cron: "13 8 * * *"
   workflow_dispatch:
 
-# Cancel a queued run if a newer one starts (manual dispatch over a cron, say).
-# Don't cancel in-progress — interrupting mid-PR-creation leaves orphan branches.
+# Cancel a queued run if a newer one starts (manual dispatch over a cron).
+# Don't cancel in-progress — interrupting mid-push can leave the working
+# tree in an awkward state.
 concurrency:
   group: sync-contributions
   cancel-in-progress: false
 
 permissions:
-  contents: write        # push the sync branch
-  pull-requests: write   # open / close PRs, enable auto-merge
+  contents: write
 
 jobs:
   sync:
-    name: Fetch + open sync PR
+    name: Fetch + push contributions snapshot
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # PAT (yours, admin) rather than the default GITHUB_TOKEN so the
-          # subsequent push, PR open, and auto-merge are attributed to you.
-          # GitHub's loop-prevention rule swallows downstream workflow runs
-          # when those events come from GITHUB_TOKEN — meaning CI would never
-          # fire on the sync PR, required checks would never appear, and
-          # auto-merge would sit forever. Using your PAT routes around it.
+          # PAT (yours, admin) so the push bypasses branch protection's
+          # required-checks gate via the admin bypass rule, and so the
+          # resulting push fires deploy-pages's push trigger (which would
+          # be swallowed by GitHub's loop-prevention if GITHUB_TOKEN
+          # authored the commit).
           token: ${{ secrets.SYNC_PAT }}
 
       - name: Set up pnpm
@@ -67,11 +66,7 @@ jobs:
           PERSONAL_GH_TOKEN: ${{ secrets.PERSONAL_GH_TOKEN }}
         run: node scripts/fetch-contributions.mjs
 
-      - name: Open auto-merging sync PR (if data changed)
-        env:
-          # SYNC_PAT (not GITHUB_TOKEN) so gh commands run as you — same
-          # loop-prevention reasoning as the checkout step above.
-          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+      - name: Commit + push (if data changed)
         run: |
           set -euo pipefail
 
@@ -80,30 +75,11 @@ jobs:
             exit 0
           fi
 
-          # Yesterday's data is stale once today's is in hand. Close any open
-          # sync PRs first so the timeline doesn't accumulate them when CI has
-          # blocked a previous day's auto-merge.
-          stale_prs=$(gh pr list --search "head:chore/sync-contributions-" --state open --json number --jq '.[].number')
-          for n in $stale_prs; do
-            echo "Closing superseded sync PR #$n"
-            gh pr close "$n" --delete-branch --comment "Superseded by today's sync."
-          done
-
-          date_tag="$(date -u +%Y-%m-%d)"
-          branch="chore/sync-contributions-${date_tag}"
-
+          # Commit author stays as the bot so `git log` reads as automation
+          # rather than implying you sat down to update JSON by hand. The
+          # PUSHER is the PAT owner (you) — that's what unlocks the bypass.
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
           git add public/data/contributions.json
-          git commit -m "chore(data): sync contributions ${date_tag}"
-          git push -u origin "$branch"
-
-          gh pr create \
-            --base master \
-            --head "$branch" \
-            --title "chore(data): sync contributions ${date_tag}" \
-            --body "Automated daily sync of GitHub contributions data. Auto-merges once CI is green; branch deletes itself."
-
-          # Auto-merge waits for the 3 required CI checks to pass, then squashes.
-          gh pr merge "$branch" --auto --squash
+          git commit -m "chore(data): sync contributions $(date -u +%Y-%m-%d)"
+          git push origin HEAD:master
