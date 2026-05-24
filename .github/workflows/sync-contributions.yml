@@ -36,6 +36,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # PAT (yours, admin) rather than the default GITHUB_TOKEN so the
+          # subsequent push, PR open, and auto-merge are attributed to you.
+          # GitHub's loop-prevention rule swallows downstream workflow runs
+          # when those events come from GITHUB_TOKEN — meaning CI would never
+          # fire on the sync PR, required checks would never appear, and
+          # auto-merge would sit forever. Using your PAT routes around it.
+          token: ${{ secrets.SYNC_PAT }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -61,7 +69,9 @@ jobs:
 
       - name: Open auto-merging sync PR (if data changed)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # SYNC_PAT (not GITHUB_TOKEN) so gh commands run as you — same
+          # loop-prevention reasoning as the checkout step above.
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
         run: |
           set -euo pipefail
 
