@@ -1,19 +1,37 @@
 name: Sync GitHub contributions
 
-# Nightly run + manual trigger. Cron is 08:00 UTC (offset off :00 to play nice
-# with GitHub Actions scheduler load).
+# Nightly run + manual trigger. Cron fires at 08:13 UTC daily.
+#
+# Why :13 instead of :00 — GitHub's scheduler is busiest at the top of every
+# hour (the most-common cron minute by far). Workflows queued in that peak
+# can be delayed 5–15 min; picking a non-round minute lands in a less-
+# contested slot for more predictable execution time. Round quarter-hours
+# (:00 :15 :30 :45) are the next-most-popular and worth avoiding too.
+# See https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule
+#
+# Flow: fetch contributions → if data changed, open a PR with auto-merge.
+# Branch protection on master blocks direct pushes, so the bot routes through
+# the same review gate as human PRs. CI runs on the PR; once green, GitHub
+# squash-merges and auto-deletes the branch. deploy-pages.yml fires on the
+# merged-PR event and rebuilds the site.
 on:
   schedule:
     - cron: "13 8 * * *"
   workflow_dispatch:
 
+# Cancel a queued run if a newer one starts (manual dispatch over a cron, say).
+# Don't cancel in-progress — interrupting mid-PR-creation leaves orphan branches.
+concurrency:
+  group: sync-contributions
+  cancel-in-progress: false
+
 permissions:
-  contents: write
-  actions: write   # so the final step can dispatch deploy-pages.yml
+  contents: write        # push the sync branch
+  pull-requests: write   # open / close PRs, enable auto-merge
 
 jobs:
   sync:
-    name: Fetch + commit contributions.json
+    name: Fetch + open sync PR
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,29 +59,41 @@ jobs:
           PERSONAL_GH_TOKEN: ${{ secrets.PERSONAL_GH_TOKEN }}
         run: node scripts/fetch-contributions.mjs
 
-      - name: Commit diff (if any)
-        id: commit
-        run: |
-          if [[ -z "$(git status --porcelain public/data/contributions.json)" ]]; then
-            echo "No changes — contributions.json is up to date."
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          git config user.name  "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/data/contributions.json
-          git commit -m "chore(data): sync contributions $(date -u +%Y-%m-%d)"
-          git push
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-
-      - name: Trigger Pages deploy
-        # Commits authored by GITHUB_TOKEN don't fire the `push` trigger on
-        # deploy-pages.yml (GitHub's loop-prevention rule), so a fresh JSON
-        # would otherwise sit on master until the next code push. Explicit
-        # workflow_dispatch IS allowed from GITHUB_TOKEN — fire it here so
-        # the home page rebuilds with the new totals every time the data
-        # actually changes.
-        if: steps.commit.outputs.changed == 'true'
+      - name: Open auto-merging sync PR (if data changed)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy-pages.yml --ref master
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$(git status --porcelain public/data/contributions.json)" ]]; then
+            echo "No changes — contributions.json is up to date."
+            exit 0
+          fi
+
+          # Yesterday's data is stale once today's is in hand. Close any open
+          # sync PRs first so the timeline doesn't accumulate them when CI has
+          # blocked a previous day's auto-merge.
+          stale_prs=$(gh pr list --search "head:chore/sync-contributions-" --state open --json number --jq '.[].number')
+          for n in $stale_prs; do
+            echo "Closing superseded sync PR #$n"
+            gh pr close "$n" --delete-branch --comment "Superseded by today's sync."
+          done
+
+          date_tag="$(date -u +%Y-%m-%d)"
+          branch="chore/sync-contributions-${date_tag}"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add public/data/contributions.json
+          git commit -m "chore(data): sync contributions ${date_tag}"
+          git push -u origin "$branch"
+
+          gh pr create \
+            --base master \
+            --head "$branch" \
+            --title "chore(data): sync contributions ${date_tag}" \
+            --body "Automated daily sync of GitHub contributions data. Auto-merges once CI is green; branch deletes itself."
+
+          # Auto-merge waits for the 3 required CI checks to pass, then squashes.
+          gh pr merge "$branch" --auto --squash
