@@ -2,7 +2,6 @@ html {
   background: var(--color-bg);
   color: var(--color-text-default);
   font-family: var(--font-body);
-  font-size: var(--type-16);
   line-height: var(--line-default);
   letter-spacing: var(--tracking-default);
   font-feature-settings: "ss01", "cv11";
@@ -13,6 +12,7 @@ body {
   min-height: 100svh;
   background: var(--color-bg);
   color: var(--color-text-default);
+  font-size: var(--type-16);
 }
 
 a {
