@@ -200,13 +200,14 @@ const toolsStat = t(locale, "hero.toolsStat").replace("{count}", String(toolsCou
 
   .hero__stat a {
     color: var(--color-action);
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-thickness: from-font;
+    text-underline-offset: 0.2em;
   }
 
   .hero__stat a:hover,
   .hero__stat a:focus-visible {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
+    text-decoration-thickness: 0.1em;
   }
 
   /* Entrance — name, pitch, bio, stat-line fade up on a staggered cadence. */
