@@ -1,0 +1,52 @@
+/*
+ * Layout atoms. Composable flex/grid primitives + width containers.
+ * Gap is opt-in at the call site — atoms ship without a default gap so
+ * consumers don't have to "undo" one they didn't ask for.
+ *
+ * Lives in the `atoms` layer so utility overrides on a component instance
+ * always win without specificity gymnastics.
+ */
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+}
+
+.grid {
+  display: grid;
+}
+
+.grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(var(--min-col, 16rem), 1fr));
+}
+
+.flex { display: flex; }
+.wrap { flex-wrap: wrap; }
+.fill { flex: 1 1 0; }
+
+/* Width containers — reuse the existing --container-* tokens. */
+.container {
+  max-inline-size: var(--measure-page, var(--container-wide));
+  margin-inline: auto;
+}
+
+.container-prose {
+  max-inline-size: var(--measure-prose, var(--container-prose));
+  margin-inline: auto;
+}
+
+.container-narrow {
+  max-inline-size: var(--measure-narrow, var(--container-narrow));
+  margin-inline: auto;
+}
+
+.container-wide {
+  max-inline-size: var(--measure-wide, 100rem);
+  margin-inline: auto;
+}

@@ -10,3 +10,7 @@
 @import "./theme/elevation.css" layer(theme);
 @import "./theme/fonts.css" layer(theme);
 @import "./base.css" layer(base);
+@import "./atoms/layout.css" layer(atoms);
+@import "./atoms/spacing.css" layer(atoms);
+@import "./atoms/typography.css" layer(atoms);
+@import "./atoms/motion.css" layer(atoms);
