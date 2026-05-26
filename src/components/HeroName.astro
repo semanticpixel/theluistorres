@@ -84,15 +84,27 @@ const { name } = Astro.props;
     transition: translate var(--duration-slow) var(--ease-out-expo);
   }
 
-  /* :nth-child base layer — works everywhere. Multiplying terracotta + slate
-     onto the bone surface gives the small chromatic fringe; in dark mode
-     screening the inverted scale reproduces the same fringe direction. */
-  .hero-name > *:nth-child(1) { color: light-dark(var(--terracotta-60), var(--terracotta-40)); }
-  .hero-name > *:nth-child(2) { color: light-dark(var(--bone-80),       var(--bone-40)); }
-  .hero-name > *:nth-child(3) { color: light-dark(var(--slate-80),      var(--slate-40)); }
-
+  /* Modern primary — single declaration keyed off the layer index via the
+     CSS if() function + style() query. Each layer reads its own --index and
+     resolves to the matching token pair. Multiplying terracotta + slate over
+     bone gives the chromatic fringe; in dark mode the inverted scale screens
+     to reproduce the same fringe direction. */
   .hero-name > * {
+    color: if(
+      style(--index: 1): light-dark(var(--terracotta-60), var(--terracotta-40));
+      style(--index: 2): light-dark(var(--bone-80),       var(--bone-40));
+      else:              light-dark(var(--slate-80),      var(--slate-40))
+    );
     mix-blend-mode: multiply;
+  }
+
+  /* Fallback for browsers without if() / style() support — Firefox at time
+     of writing, and any Chromium / Safari older than the if() landing. The
+     :nth-child ladder is order-dependent but ships the identical palette. */
+  @supports not (color: if(style(--index: 1): red; else: blue)) {
+    .hero-name > *:nth-child(1) { color: light-dark(var(--terracotta-60), var(--terracotta-40)); }
+    .hero-name > *:nth-child(2) { color: light-dark(var(--bone-80),       var(--bone-40)); }
+    .hero-name > *:nth-child(3) { color: light-dark(var(--slate-80),      var(--slate-40)); }
   }
 
   /* Ambient pulse — set by the JS scheduler. */
