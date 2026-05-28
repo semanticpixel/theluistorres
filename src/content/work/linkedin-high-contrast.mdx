@@ -18,7 +18,7 @@ Windows High Contrast Mode (now called Contrast Themes) isn't a preference — i
 
 The way most product teams encounter this is as a regression report: *"the button is invisible in High Contrast Mode."* What's actually happening is that the browser stripped your hand-tuned `box-shadow` border treatment, your background-color affordance, your hover state — and what's left is text on a transparent surface with no shape. The fix isn't a one-off; it's a discipline you have to bake into every component.
 
-[TK Luis: was this kicked off by a specific compliance milestone, an enterprise customer ask, or a proactive a11y push? One sentence on what triggered the work helps frame the urgency.]
+This wasn't triggered by a compliance deadline or an enterprise escalation — it was foresight: while reworking LinkedIn's tokens for the dark-mode reskin, I knew the a11y regressions filed against High Contrast Mode every year could finally be solved for free through the same semantic theming layer.
 
 ## Move
 
