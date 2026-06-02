@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@10.11.0",
   "engines": {
-    "node": ">=22.0.0",
+    "node": ">=22.12.0",
     "pnpm": ">=10.0.0"
   },
   "scripts": {
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
-    "@astrojs/mdx": "^4.3.14",
+    "@astrojs/mdx": "^6.0.1",
     "@astrojs/sitemap": "^3.7.2",
     "@axe-core/playwright": "^4.11.3",
     "@fontsource-variable/fraunces": "^5.2.9",
@@ -32,7 +32,7 @@
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@fontsource/fraunces": "^5.2.9",
     "@resvg/resvg-js": "^2.6.2",
-    "astro": "^5.18.1",
+    "astro": "^6.4.2",
     "axe-core": "^4.11.4",
     "playwright": "^1.60.0",
     "satori": "^0.26.0",
