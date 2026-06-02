@@ -1,5 +1,6 @@
-import { defineCollection, z } from "astro:content";
+import { defineCollection } from "astro:content";
 import { glob } from "astro/loaders";
+import { z } from "astro/zod";
 
 /*
  * Content collections.
@@ -46,7 +47,7 @@ const writing = defineCollection({
     title: z.string().min(1),
     slug: z.string().regex(/^[a-z0-9-]+$/).optional(),
     summary: z.string().min(1).max(280),
-    externalUrl: z.string().url(),
+    externalUrl: z.url(),
     date: z.coerce.date(),
     readingTime: z.string().optional(),
     tags: z.array(z.string().min(1)).default([]),
