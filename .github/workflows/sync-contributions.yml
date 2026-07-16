@@ -28,6 +28,7 @@ concurrency:
 permissions:
   contents: write        # push the sync branch
   pull-requests: write   # open / close PRs, enable auto-merge
+  issues: write          # file the failure / stale-data notifications below
 
 jobs:
   sync:
@@ -58,6 +59,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Fetch contributions
+        id: fetch
         env:
           # Only the personal token runs in CI. Work contributions come
           # from a committed snapshot at public/data/work-contributions.json,
@@ -107,3 +109,82 @@ jobs:
 
           # Auto-merge waits for the 3 required CI checks to pass, then squashes.
           gh pr merge "$branch" --auto --squash
+
+      # The work snapshot is hand-committed, so it drifts. Stale data doesn't
+      # fail anything — it just silently under-reports the graph (see the
+      # rationale in scripts/fetch-contributions.mjs). The script emits the
+      # lag; this turns it into something you'll actually see.
+      - name: Flag stale work snapshot
+        if: steps.fetch.outputs.work_snapshot_stale == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+          NEWEST: ${{ steps.fetch.outputs.work_snapshot_newest }}
+          LAG: ${{ steps.fetch.outputs.work_snapshot_lag_days }}
+        run: |
+          set -euo pipefail
+          gh label create sync-stale-data --color fbca04 \
+            --description "Work contributions snapshot has drifted out of date" --force
+
+          # Quiet if one is already open: the issue's existence is the signal.
+          # This runs nightly, so commenting on every run would produce the
+          # same wall of noise that made the last outage easy to ignore.
+          if [[ -n "$(gh issue list --label sync-stale-data --state open --limit 1 --json number --jq '.[].number')" ]]; then
+            echo "Stale-data issue already open — staying quiet."
+            exit 0
+          fi
+
+          # Heredoc to a file, not "$(cat <<EOF ...)". Inside a command
+          # substitution bash scans ahead for the closing paren and treats an
+          # apostrophe in the prose as an opening quote — a stray "doesn't"
+          # is a syntax error that only fires on the day this step is needed.
+          cat > "${RUNNER_TEMP:-/tmp}/stale-body.md" <<EOF
+          \`public/data/work-contributions.json\` only reaches **${NEWEST}** — ${LAG} days behind.
+
+          Work contributions after that date are missing from the contribution graph. They render as empty days, which is indistinguishable from days with no work, so the graph under-reports real activity until this is refreshed.
+
+          **Fix:** run \`node scripts/fetch-work-contributions.mjs\` locally (it needs your logged-in \`gh\` session) and commit the updated file. The next sync picks it up.
+
+          Closing this issue is safe once the snapshot is refreshed; a new one opens if it drifts again.
+          EOF
+
+          gh issue create \
+            --title "Work contributions snapshot is stale (${LAG} days behind)" \
+            --label sync-stale-data \
+            --body-file "${RUNNER_TEMP:-/tmp}/stale-body.md"
+
+      # This workflow failed silently for 31 consecutive nights in June/July
+      # 2026 (an expired PAT) because nothing reported a red scheduled run.
+      # Scheduled workflows have no PR to annotate, so failure has to be pushed
+      # somewhere visible or it isn't noticed at all.
+      - name: Report sync failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create sync-failure --color d73a4a \
+            --description "Nightly contributions sync is failing" --force
+
+          # Same quiet-if-open rule as above: one issue per outage, not per night.
+          if [[ -n "$(gh issue list --label sync-failure --state open --limit 1 --json number --jq '.[].number')" ]]; then
+            echo "Failure issue already open — staying quiet."
+            exit 0
+          fi
+
+          # See the note in the stale-snapshot step: heredoc to a file rather
+          # than through a command substitution, so prose can contain quotes.
+          cat > "${RUNNER_TEMP:-/tmp}/failure-body.md" <<EOF
+          The scheduled contributions sync failed: [run ${GITHUB_RUN_ID}](${RUN_URL})
+
+          The graph is frozen at its last good sync until this is fixed. Nothing else surfaces this — the workflow only runs on a schedule, so a red run is invisible unless you go looking.
+
+          **Common cause:** an expired \`PERSONAL_GH_TOKEN\` (\`HTTP 401: Bad credentials\` in the fetch step). Mint a new classic PAT with \`read:user\` and update the secret. Note that \`gh secret set\` needs a real terminal — it reads the value from stdin and will silently store an empty string if there is no TTY to prompt, which looks identical to success.
+
+          This issue stays open (and silent) until closed; a new one opens on the next failure after that.
+          EOF
+
+          gh issue create \
+            --title "Nightly contributions sync is failing" \
+            --label sync-failure \
+            --body-file "${RUNNER_TEMP:-/tmp}/failure-body.md"

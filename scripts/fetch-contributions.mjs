@@ -23,7 +23,7 @@
  * just `fetch`. Smaller surface, easier to read, easier to debug in CI logs.
  */
 
-import { writeFile, mkdir, readFile, stat } from "node:fs/promises";
+import { writeFile, mkdir, readFile, stat, appendFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -193,6 +193,36 @@ async function readWorkSnapshot() {
   }
 }
 
+/*
+ * The work snapshot is committed by hand, so it drifts between local runs of
+ * fetch-work-contributions.mjs. Drift is invisible in the output: days the
+ * snapshot doesn't reach sum in zero work contributions, which renders
+ * identically to a day with no work. The graph quietly under-reports and
+ * nothing complains — in July 2026 a 5-week-stale snapshot hid ~1900 real
+ * contributions and made a worked month look idle.
+ *
+ * Warn rather than throw. The personal half of the sync is still worth
+ * writing, and hard-failing over a file that's *expected* to lag a few days
+ * would freeze the whole graph to protect it from being slightly behind.
+ * The annotation shows on the run summary; the workflow escalates to an issue.
+ */
+const STALE_AFTER_DAYS = Number(process.env.WORK_SNAPSHOT_STALE_AFTER_DAYS ?? 14);
+
+function checkWorkFreshness(snapshot, todayISO) {
+  const dates = snapshot.contributions.map(d => d.date).sort();
+  const newest = snapshot.range?.to?.slice(0, 10) ?? dates[dates.length - 1];
+  if (!newest) return null;
+  const lagDays = Math.floor((Date.parse(todayISO) - Date.parse(newest)) / 86_400_000);
+  return { newest, lagDays, stale: lagDays > STALE_AFTER_DAYS };
+}
+
+/* Hand results to later workflow steps; no-op outside Actions. */
+async function emitOutputs(pairs) {
+  if (!process.env.GITHUB_OUTPUT) return;
+  const lines = Object.entries(pairs).map(([k, v]) => `${k}=${v}\n`).join("");
+  await appendFile(process.env.GITHUB_OUTPUT, lines);
+}
+
 const { from, to } = range();
 
 const personal = await fetchCalendar({
@@ -206,7 +236,16 @@ let total = personal.totalContributions;
 
 const workSnapshot = await readWorkSnapshot();
 const sources = ["personal"];
+let freshness = null;
 if (workSnapshot) {
+  freshness = checkWorkFreshness(workSnapshot, to.slice(0, 10));
+  if (freshness?.stale) {
+    console.log(
+      `::warning title=Work snapshot is stale::public/data/work-contributions.json only reaches ${freshness.newest} ` +
+        `(${freshness.lagDays} days behind). Work contributions after that date are missing from the graph. ` +
+        `Re-run scripts/fetch-work-contributions.mjs locally and commit the result.`,
+    );
+  }
   const workMap = new Map();
   for (const d of workSnapshot.contributions) {
     /* Drop days outside our sync window so the level percentile bucketing
@@ -245,3 +284,14 @@ await writeFile(resolve(dir, "contributions.json"), JSON.stringify(out, null, 2)
 console.log(
   `fetch-contributions: ${days.length} days · ${total} total · ${streak}-day streak · today ${today?.count ?? 0} · sources=${sources.join("+")}`,
 );
+if (freshness) {
+  console.log(
+    `fetch-contributions: work snapshot reaches ${freshness.newest} (${freshness.lagDays}d behind, threshold ${STALE_AFTER_DAYS}d)`,
+  );
+}
+
+await emitOutputs({
+  work_snapshot_stale: String(freshness?.stale ?? false),
+  work_snapshot_newest: freshness?.newest ?? "",
+  work_snapshot_lag_days: String(freshness?.lagDays ?? ""),
+});
