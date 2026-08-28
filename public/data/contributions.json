@@ -1,12 +1,12 @@
 {
-  "lastUpdated": "2026-08-27T19:03:43.731Z",
+  "lastUpdated": "2026-08-28T20:11:32.083Z",
   "meta": {
-    "totalContributions": 14387,
-    "streak": 45,
+    "totalContributions": 14364,
+    "streak": 46,
     "todayCount": 0,
     "range": {
-      "from": "2025-08-27T00:00:00.000Z",
-      "to": "2026-08-27T00:00:00.000Z"
+      "from": "2025-08-28T00:00:00.000Z",
+      "to": "2026-08-28T00:00:00.000Z"
     },
     "sources": [
       "personal",
@@ -15,11 +15,6 @@
     ]
   },
   "contributions": [
-    {
-      "date": "2025-08-27",
-      "count": 26,
-      "level": 2
-    },
     {
       "date": "2025-08-28",
       "count": 16,
@@ -1118,7 +1113,7 @@
     {
       "date": "2026-04-04",
       "count": 8,
-      "level": 1
+      "level": 2
     },
     {
       "date": "2026-04-05",
@@ -1842,6 +1837,11 @@
     },
     {
       "date": "2026-08-27",
+      "count": 3,
+      "level": 1
+    },
+    {
+      "date": "2026-08-28",
       "count": 0,
       "level": 0
     }
