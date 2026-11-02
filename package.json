@@ -35,7 +35,7 @@
     "astro": "^7.2.8",
     "axe-core": "^4.11.4",
     "playwright": "^1.60.0",
-    "satori": "^0.26.0",
+    "satori": "^0.33.5",
     "satori-html": "^0.3.2",
     "typescript": "^5.9.3",
     "wawoff2": "^2.0.1",
